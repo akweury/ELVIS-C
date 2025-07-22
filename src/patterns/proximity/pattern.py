@@ -5,14 +5,12 @@ from config import size_list, prin_in_neg
 from src import config
 
 from .proximity_group_trigger import non_overlap_scatter_cluster
+from .proximity_avoidance import proximity_avoidance_task_fn
+
 
 def register_tasks():
     tasks = {}
-    tasks.update(create_tasks_v3(
-        task_func=non_overlap_scatter_cluster,
-        variation_keys=["color", "shape", "size"],
-        variant_range=range(1, 4),
-        size_list=size_list,
-        pin=prin_in_neg
-    ))
+    tasks.update(create_tasks_v3(task_func=proximity_avoidance_task_fn, size_list=size_list, pin=prin_in_neg))
+    tasks.update(create_tasks_v3(task_func=non_overlap_scatter_cluster, size_list=size_list, pin=prin_in_neg))
+
     return tasks

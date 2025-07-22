@@ -5,6 +5,8 @@
 
 # Size variants for shape
 size_list = ["s", "m", "l"]
+shapes = ['circle', 'square', 'triangle']
+colors = ['blue', 'green', 'orange']
 
 # Whether to include principle in negative samples
 prin_in_neg = False

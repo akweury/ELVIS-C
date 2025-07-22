@@ -14,37 +14,23 @@ def draw_shape(ax, shape, center, size, color):
     elif shape == 'square':
         ax.add_patch(Rectangle((x - size / 2, y - size / 2), size, size, color=color))
     elif shape == 'triangle':
-        ax.add_patch(RegularPolygon((x, y), 3, size / 2, orientation=3.14 / 2, color=color))
+        ax.add_patch(RegularPolygon((x, y), numVertices=3, radius=size / 2, orientation=3.14 / 2, facecolor=color))
     else:
         raise ValueError(f"Unknown shape: {shape}")
 
 
-# def create_tasks_v3(task_func, variation_keys, variant_range, size_list, pin=False):
-#     shapes = ['circle', 'square', 'triangle']
-#     colors = ['blue', 'green', 'orange']
-#     tasks = {}
-#     for shape in shapes:
-#         for color in colors:
-#             for size in size_list:
-#                 for variant in variant_range:
-#                     name = f"{task_func.__name__}_{shape}_{color}_{size}_{variant}"
-#                     tasks[name] = lambda s=shape, c=color, sz=size, v=variant: task_func(s, c, sz, v)
-#     return tasks
-
-def create_tasks_v3(task_func, variation_keys, variant_range, size_list, pin=False):
-    shapes = ['circle', 'square', 'triangle']
-    colors = ['blue', 'green', 'orange']
+def create_tasks_v3(task_func, size_list, pin=False):
     tasks = {}
+    consider_options = [True, False]
+    for consider_shape in consider_options:
+        for consider_color in consider_options:
+            for consider_size in consider_options:
+                for size_label in size_list:
+                    name = f"{task_func.__name__}_s{int(consider_shape)}c{int(consider_color)}{size_label}"
+                    def make_task(cs=consider_shape, cc=consider_color, cz=consider_size):
+                        return task_func(cs, cc, cz, size_label)
 
-    for shape in shapes:
-        for color in colors:
-            for size in size_list:
-                for variant in variant_range:
-                    name = f"{task_func.__name__}_{shape}_{color}_{size}_{variant}"
-                    def make_task(s=shape, c=color, sz=size, v=variant):
-                        return task_func(s, c, sz, v)
                     tasks[name] = make_task()
-
     return tasks
 
 

@@ -8,6 +8,7 @@ def load_task_modules_from_patterns():
     """Dynamically load all pattern modules from the `patterns` folder."""
     task_modules = {}
     base_path = Path(__file__).parent / "patterns"
+    task_id = 0
 
     for principle_dir in base_path.iterdir():
         if principle_dir.is_dir() and (principle_dir / "pattern.py").exists():
@@ -15,8 +16,12 @@ def load_task_modules_from_patterns():
             module = importlib.import_module(module_name)
             if hasattr(module, "register_tasks"):
                 tasks = module.register_tasks()
-                task_modules.update(tasks)
-
+                for name, task in tasks.items():
+                    id_str = f"{task_id:04d}"
+                    task_modules[f"{id_str}_{name}"] = task
+                    task_id += 1
+                    if task_id > 9999:
+                        break
     return task_modules
 
 
