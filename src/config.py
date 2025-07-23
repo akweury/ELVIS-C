@@ -1,5 +1,6 @@
 # Created by MacBook Pro at 14.07.25
 
+from pathlib import Path
 
 # config.py
 
@@ -10,3 +11,6 @@ colors = ['blue', 'green', 'orange']
 
 # Whether to include principle in negative samples
 prin_in_neg = False
+
+root = Path(__file__).parents[0]
+raw_patterns = root / 'video_tasks'
