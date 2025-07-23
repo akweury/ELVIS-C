@@ -1,6 +1,6 @@
 timm
 opencv-python==4.8.0.74
-torch==2.1.0a0+32f93b1
+torch==2.0.1
 torchvision==0.16.2
 torchaudio==2.1.0
 -f https://download.pytorch.org/whl/cu121
