@@ -14,8 +14,8 @@ def main():
     # Start the RTPT tracking
     rtpt.start()
     print(config.root)
-    for principle, principle_tasks in tqdm(tasks.items()):
-        for name, task_fn in principle_tasks.items():
+    for principle, principle_tasks in tasks.items():
+        for name, task_fn in tqdm(principle_tasks.items()):
             output_path = config.root / "video_tasks" / principle / "train" / name
             print(f"Generating task: {name}")
             task_fn(output_dir=str(output_path), num_pos=3, num_neg=3)
