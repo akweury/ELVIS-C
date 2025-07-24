@@ -252,7 +252,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
 
     for idx, pattern_folder in enumerate(pattern_folders):
         print(f"\n--- [{idx+1}/{len(pattern_folders)}] Training on pattern: {pattern_folder.stem} ---")
-        rtpt.step(subtitle=f"{principle} - {pattern_folder.stem} training started")
+        rtpt.step(subtitle=f"")
         train_loader, num_train_images = get_video_dataloader(pattern_folder, batch_size, img_num)
         print(f"Number of training videos: {num_train_images}")
         wandb.log({f"{principle}/num_train_images": num_train_images})
