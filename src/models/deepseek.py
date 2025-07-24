@@ -8,8 +8,8 @@ from pathlib import Path
 from PIL import Image
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import AutoModelForCausalLM
-# from deepseek_vl2.models import DeepseekVLV2Processor, DeepseekVLV2ForCausalLM
-# from deepseek_vl2.utils.io import load_pil_images
+from deepseek_vl2.models import DeepseekVLV2Processor, DeepseekVLV2ForCausalLM
+from deepseek_vl2.utils.io import load_pil_images
 
 from src.models import conversations
 

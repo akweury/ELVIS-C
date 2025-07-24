@@ -262,8 +262,6 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
                     B, T, C, H, W = videos.shape
                     videos = videos.view(B * T, C, H, W).to(device, non_blocking=True)
                     labels = labels.to(device, non_blocking=True)
-                    print(f"[run_vit test] videos device: {videos.device}, labels device: {labels.device}")
-
                     outputs = model(videos)
                     outputs = outputs.view(B, T, -1).mean(dim=1)
                     predicted = torch.argmax(outputs, dim=1)
