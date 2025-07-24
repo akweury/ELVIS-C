@@ -72,7 +72,7 @@ class VideoDataset(Dataset):
         return video_tensor, label
 
 # Python
-def get_video_dataloader(data_dir, batch_size, frames_per_clip=16, num_workers=2):
+def get_video_dataloader(data_dir, batch_size, frames_per_clip=16, num_workers=0):
     transform = transforms.Compose([
         transforms.Resize(224),
         transforms.CenterCrop(224),
