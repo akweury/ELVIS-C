@@ -1,7 +1,7 @@
 # Created by MacBook Pro at 15.07.25
 
-from utils.generators import create_tasks_v3
-from config import size_list, prin_in_neg
+from src.utils.generators import create_tasks_v3
+from src.config import size_list, prin_in_neg
 from src.patterns.proximity.proximity_avoidance import proximity_avoidance_task_fn
 from src.patterns.proximity.proximity_group_trigger import non_overlap_scatter_cluster
 from src.patterns.proximity.proximity_leader_trigger import proximity_leader_trigger_task_fn

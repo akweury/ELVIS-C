@@ -6,10 +6,10 @@ import numpy as np
 from pathlib import Path
 import imageio
 
-from utils.generators import draw_shape, combine_gifs
-from utils import proximity_utils
+from src.utils.generators import draw_shape, combine_gifs
+from src.utils import proximity_utils
 
-from utils.proximity_utils import assign_group_objects, get_converge_positions, jitter_position
+from src.utils.proximity_utils import assign_group_objects, get_converge_positions, jitter_position
 
 def generate_proximity_group_video(
     cs: bool, cc: bool, cz: bool,

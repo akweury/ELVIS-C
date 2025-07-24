@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import imageio
 
-from utils.generators import draw_shape, combine_gifs
-from utils.proximity_utils import assign_group_objects, jitter_position
+from src.utils.generators import draw_shape, combine_gifs
+from src.utils.proximity_utils import assign_group_objects, jitter_position
 
 def generate_continuity_chain_video(cs, cc, cz, size, count, output_dir, frames=20):
     os.makedirs(output_dir, exist_ok=True)

@@ -1,6 +1,6 @@
 # Created by MacBook Pro at 14.07.25
 from pathlib import Path
-from task_registry import load_task_modules_from_patterns
+from src.task_registry import load_task_modules_from_patterns
 
 
 def main():

@@ -1,7 +1,7 @@
 # Created by MacBook Pro at 23.07.25
 
-from utils.generators import create_tasks_v3
-from config import size_list, prin_in_neg
+from src.utils.generators import create_tasks_v3
+from src.config import size_list, prin_in_neg
 
 from .continuity_chain import continuity_chain_task_fn
 from src.patterns.continuity.continuity_smooth_path import continuity_smooth_path_task_fn
