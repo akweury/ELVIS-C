@@ -31,14 +31,14 @@ if __name__ == "__main__":
     #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     from src.models import vit
-    # from src.models import llava
+    from src.models import llava
     from src.models import deepseek
     import torch
 
     # List of baseline models
     baseline_models = [
         {"name": "ViT-Base-Patch32-384", "module": vit.run_vit},
-        # {"name": "Llava", "module": llava.run_llava},
+        {"name": "Llava", "module": llava.run_llava},
         {"name": "deepseek", "module": deepseek.run_deepseek},
     ]
 
