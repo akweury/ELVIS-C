@@ -125,3 +125,22 @@ def deepseek_eval_conversation(video, logic_rules):
         {"role": "<|Assistant|>", "content": ""},
     ]
     return conversation
+
+
+def vlm2vec_messages():
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "video",
+                    "video": "../../../assets/example_video.mp4",
+                    "max_pixels": 360 * 420,
+                    "fps": 1.0,
+                },
+                {"type": "text", "text": "Describe this video."},
+            ],
+        }
+    ]
+
+    return messages

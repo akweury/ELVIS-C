@@ -3,7 +3,7 @@
 
 import argparse
 from src import config
-
+import torch
 import os
 
 
@@ -30,38 +30,26 @@ if __name__ == "__main__":
     # else:
     #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    from src.models import vit
-    # from src.models import llava
-    from src.models import deepseek
-    import torch
-
-    # List of baseline models
-    baseline_models = [
-        {"name": "ViT-Base-Patch32-384", "module": vit.run_vit},
-        # {"name": "Llava", "module": llava.run_llava},
-        {"name": "deepseek", "module": deepseek.run_deepseek},
-    ]
-
     # device = "cuda:0" if torch.cuda.is_available() and args.device_id is not None else "cpu"
     # # Determine device based on device_id flag
     if args.device_id is not None and torch.cuda.is_available():
         device = f"cuda:{args.device_id}"
     else:
         device = "cpu"
-
-    # Construct the data path based on the principle argument
-    prin_path = config.raw_patterns / args.principle
-    print(f"Starting model evaluations with data from {str(prin_path)}...")
-
-    if args.model == "llava":
-        model = baseline_models[1]
+    from src.models import vit
+    # from src.models import llava
+    from src.models import deepseek
+    from src.models import vlm2vec
+    data_path = config.raw_patterns / args.principle
+    # List of baseline models
+    if args.model == "vlm2vec":
+        vlm2vec.run_vlm2vec(data_path, args.principle, args.batch_size, device, args.img_num, args.epochs)
     elif args.model == "vit":
-        model = baseline_models[0]
+        vit.run_vit(data_path, args.principle, args.batch_size, device, args.img_num, args.epochs)
+    # elif args.model == "llava":
+    #     llava.run_llava(data_path, args.principle, args.batch_size, device, args.img_num, args.epochs)
     elif args.model == "deepseek":
-        model = baseline_models[1]
+        deepseek.run_deepseek(data_path, args.principle, args.batch_size, device, args.img_num, args.epochs)
     else:
-        raise ValueError(f"Model {args.model} is not supported. Choose from {', '.join([m['name'] for m in baseline_models])}.")
-
-    evaluate_model(model, args.principle, args.batch_size, prin_path, device, args.img_num, args.epochs)
-
+        raise ValueError(f"Model {args.model} is not supported. Choose from 'vit', 'llava', or 'deepseek'.")
     print("All model evaluations completed.")

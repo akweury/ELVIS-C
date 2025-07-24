@@ -2,7 +2,7 @@
 
 import random
 from itertools import combinations
-
+from pathlib import Path
 
 def get_all_combs(given_list):
     # Generate all combinations of all lengths
@@ -96,3 +96,13 @@ def get_random_sizes(obj_num, obj_size):
         for _ in range(obj_num)
     ]
     return sizes
+
+def load_videos(video_dir, max_videos=None):
+    video_folders = sorted([f for f in Path(video_dir).iterdir() if f.is_dir()])
+    if max_videos is not None:
+        video_folders = video_folders[:max_videos]
+    videos = []
+    for folder in video_folders:
+        frame_paths = sorted(folder.glob("frame_*.png"))
+        videos.append(frame_paths)
+    return videos
