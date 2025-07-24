@@ -8,7 +8,7 @@ from src.patterns.proximity.proximity_leader_trigger import proximity_leader_tri
 
 def register_tasks():
     tasks = {}
-    # tasks.update(create_tasks_v3(task_func=proximity_leader_trigger_task_fn, size_list=size_list, pin=prin_in_neg))
-    # tasks.update(create_tasks_v3(task_func=proximity_avoidance_task_fn, size_list=size_list, pin=prin_in_neg))
-    # tasks.update(create_tasks_v3(task_func=non_overlap_scatter_cluster, size_list=size_list, pin=prin_in_neg))
+    tasks.update(create_tasks_v3(task_func=proximity_leader_trigger_task_fn, size_list=size_list, pin=prin_in_neg))
+    tasks.update(create_tasks_v3(task_func=proximity_avoidance_task_fn, size_list=size_list, pin=prin_in_neg))
+    tasks.update(create_tasks_v3(task_func=non_overlap_scatter_cluster, size_list=size_list, pin=prin_in_neg))
     return tasks
