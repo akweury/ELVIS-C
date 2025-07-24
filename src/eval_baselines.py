@@ -3,18 +3,9 @@
 
 import argparse
 from src import config
-from src.models import vit
-# from src.models import llava
-from src.models import deepseek
-import torch
+
 import os
 
-# List of baseline models
-baseline_models = [
-    {"name": "ViT-Base-Patch32-384", "module": vit.run_vit},
-    # {"name": "Llava", "module": llava.run_llava},
-    {"name": "deepseek", "module": deepseek.run_deepseek},
-]
 
 
 def evaluate_model(model_entry, principle, batch_size, data_path, device, img_num, epochs):
@@ -40,6 +31,19 @@ if __name__ == "__main__":
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
+    from src.models import vit
+    # from src.models import llava
+    from src.models import deepseek
+    import torch
+
+    # List of baseline models
+    baseline_models = [
+        {"name": "ViT-Base-Patch32-384", "module": vit.run_vit},
+        # {"name": "Llava", "module": llava.run_llava},
+        {"name": "deepseek", "module": deepseek.run_deepseek},
+    ]
+
+    device = "cuda:0" if torch.cuda.is_available() and args.device_id is not None else "cpu"
     # # Determine device based on device_id flag
     # if args.device_id is not None and torch.cuda.is_available():
     #     device = f"cuda:{args.device_id}"
