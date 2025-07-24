@@ -5,16 +5,16 @@ from rtpt import RTPT
 from src import config
 import random
 import time
-
+from tqdm import tqdm
 
 def main():
     tasks = load_task_modules_from_patterns()
 
-    rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Generation', max_iterations=len(tasks))
+    rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Gen', max_iterations=len(tasks))
     # Start the RTPT tracking
     rtpt.start()
     print(config.root)
-    for principle, principle_tasks in tasks.items():
+    for principle, principle_tasks in tqdm(tasks.items()):
         for name, task_fn in principle_tasks.items():
             output_path = config.root / "video_tasks" / principle / "train" / name
             print(f"Generating task: {name}")
@@ -27,7 +27,7 @@ def main():
             print(f"Saved to: {output_path}")
 
         # Update the RTPT (subtitle is optional)
-        rtpt.step(subtitle=f"{principle} tasks completed")
+        rtpt.step(subtitle=f"{principle}")
 
 
 if __name__ == "__main__":
