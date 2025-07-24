@@ -140,6 +140,7 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
     optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=5e-5, betas=(0.9, 0.999))  # Faster convergence
     scaler = torch.cuda.amp.GradScaler()  # Ensure AMP is enabled
     model.to(device)
+    print(f"[train_vit] Model device: {next(model.parameters()).device}")
     model.train()
 
     for epoch in range(epochs):
@@ -149,6 +150,7 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
             B, T, C, H, W = videos.shape
             videos = videos.view(B * T, C, H, W).to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
+            print(f"[train_vit] videos device: {videos.device}, labels device: {labels.device}")
 
             with torch.cuda.amp.autocast():
                 outputs = model(videos)  # (B*T, num_classes)
@@ -169,6 +171,8 @@ from sklearn.metrics import confusion_matrix
 
 def evaluate_vit(model, test_loader, device, principle, pattern_name):
     model.to(device)
+    print(f"[evaluate_vit] Model device: {next(model.parameters()).device}")
+
     model.eval()
     correct, total = 0, 0
     all_labels = []
@@ -176,16 +180,15 @@ def evaluate_vit(model, test_loader, device, principle, pattern_name):
 
     with torch.no_grad():
         for images, labels in test_loader:
-            images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
-            outputs = model(images)
+            images = images.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            print(f"[evaluate_vit] images device: {images.device}, labels device: {labels.device}")
+            with torch.cuda.amp.autocast(enabled=(device != "cpu")):
+                outputs = model(images)
             predicted = torch.argmax(outputs, dim=1)
 
-            # Store labels and predictions
             all_labels.extend(labels.cpu().numpy())
             all_predictions.extend(predicted.cpu().numpy())
-
-            print(f"all_labels: {all_labels}")
-            print(f"all_predictions: {all_predictions}")
 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -260,6 +263,8 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
                     B, T, C, H, W = videos.shape
                     videos = videos.view(B * T, C, H, W).to(device, non_blocking=True)
                     labels = labels.to(device, non_blocking=True)
+                    print(f"[run_vit test] videos device: {videos.device}, labels device: {labels.device}")
+
                     outputs = model(videos)
                     outputs = outputs.view(B, T, -1).mean(dim=1)
                     predicted = torch.argmax(outputs, dim=1)
