@@ -13,7 +13,7 @@ import wandb
 from pathlib import Path
 from torch.utils.data import DataLoader, Subset
 from collections import defaultdict
-
+from rtpt import RTPT  # Real-Time Progress Tracker for PyTorch
 from src import config
 
 from src.utils import data_utils
@@ -179,6 +179,8 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
     model.load_checkpoint(checkpoint_path)
 
+
+
     print(f"Training and Evaluating ViT Model on Gestalt ({principle}) Patterns...")
     results = {}
     total_accuracy = []
@@ -191,7 +193,15 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
 
     pattern_folders = sorted([p for p in (principle_path / "train").iterdir() if p.is_dir()], key=lambda x: x.stem)
 
+    rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Generation', max_iterations=len(pattern_folders))
+    # Start the RTPT tracking
+    rtpt.start()
+    print(config.root)
+
     for pattern_folder in pattern_folders:
+        # Update the RTPT (subtitle is optional)
+        rtpt.step(subtitle=f"{principle} - {pattern_folder.stem} training started")
+
         train_loader, num_train_images = get_dataloader(pattern_folder, batch_size, img_num)
         wandb.log({f"{principle}/num_train_images": num_train_images})
         train_vit(model, train_loader, device, checkpoint_path, epochs)
