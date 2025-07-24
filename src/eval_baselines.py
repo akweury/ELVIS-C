@@ -43,12 +43,12 @@ if __name__ == "__main__":
         {"name": "deepseek", "module": deepseek.run_deepseek},
     ]
 
-    device = "cuda:0" if torch.cuda.is_available() and args.device_id is not None else "cpu"
+    # device = "cuda:0" if torch.cuda.is_available() and args.device_id is not None else "cpu"
     # # Determine device based on device_id flag
-    # if args.device_id is not None and torch.cuda.is_available():
-    #     device = f"cuda:{args.device_id}"
-    # else:
-    #     device = "cpu"
+    if args.device_id is not None and torch.cuda.is_available():
+        device = f"cuda:{args.device_id}"
+    else:
+        device = "cpu"
 
     # Construct the data path based on the principle argument
     prin_path = config.raw_patterns/args.principle
