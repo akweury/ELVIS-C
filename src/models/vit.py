@@ -118,9 +118,9 @@ class ViTClassifier(nn.Module):
     def save_checkpoint(self, filepath):
         torch.save(self.state_dict(), filepath)
 
-    def load_checkpoint(self, filepath):
+    def load_checkpoint(self, filepath, device):
         if Path(filepath).exists():
-            self.load_state_dict(torch.load(filepath))
+            self.load_state_dict(torch.load(filepath)).to(device)
             print(f"Checkpoint loaded from {filepath}")
         else:
             print("No checkpoint found, starting from scratch.")
@@ -223,7 +223,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
     print(f"[run_vit test] model device: {next(model.parameters()).device}")
 
-    model.load_checkpoint(checkpoint_path)
+    model.load_checkpoint(checkpoint_path, device)
 
     print(f"\n=== Training and Evaluating ViT Model on Gestalt ({principle}) Patterns ===")
     results = {}
