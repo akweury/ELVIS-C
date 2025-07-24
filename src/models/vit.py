@@ -221,6 +221,8 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model_name = "vit_base_patch16_224"
     checkpoint_path = config.output_dir / principle / f"{model_name}_{img_num}checkpoint.pth"
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
+    print(f"[run_vit test] model device: {model.device}")
+
     model.load_checkpoint(checkpoint_path)
 
     print(f"\n=== Training and Evaluating ViT Model on Gestalt ({principle}) Patterns ===")
@@ -291,7 +293,6 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
                 f"{principle}/average_precision": avg_precision,
                 f"{principle}/average_recall": avg_recall
             })
-
 
             results[principle][pattern_folder.stem] = {
                 "accuracy": accuracy,
