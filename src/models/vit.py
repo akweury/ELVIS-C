@@ -221,7 +221,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model_name = "vit_base_patch16_224"
     checkpoint_path = config.output_dir / principle / f"{model_name}_{img_num}checkpoint.pth"
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
-    print(f"[run_vit test] model device: {model.device}")
+    print(f"[run_vit test] model device: {next(model.parameters()).device}")
 
     model.load_checkpoint(checkpoint_path)
 
