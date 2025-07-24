@@ -95,7 +95,7 @@ python -m src.main
 
 ###### train deepseek
 ```
-python -m src.evaluate_models --batch_size 1 --principle proximity --model deepseek --device_id 2
+python -m src.eval_baselines --batch_size 1 --principle continuity --model deepseek --device_id 10
 ```
 
 ##### train ViT
