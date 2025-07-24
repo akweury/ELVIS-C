@@ -105,7 +105,7 @@ python -m src.eval_baselines --batch_size 100 --principle proximity --img_num 3 
 python -m src.eval_baselines --batch_size 100 --principle similarity --img_num 100 --device_id 1
 python -m src.eval_baselines --batch_size 100 --principle closure --img_num 100 --device_id 0
 python -m src.eval_baselines --batch_size 100 --principle symmetry --img_num 100 --device_id 5
-python -m src.eval_baselines --batch_size 100 --principle continuity --img_num 100 --model vit --device_id 4
+python -m src.eval_baselines --batch_size 100 --principle continuity --img_num 100 --model vit --device_id 10
 ```
 
 ###### train Llava
