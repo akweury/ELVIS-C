@@ -43,6 +43,7 @@ def load_images(image_dir):
     return image_paths
     # return [Image.open(img_path).convert("RGB").resize((224, 224)) for img_path in image_paths]
 
+
 def load_videos(video_dir, max_videos=None):
     video_folders = sorted([f for f in Path(video_dir).iterdir() if f.is_dir()])
     if max_videos is not None:
@@ -68,6 +69,7 @@ def infer_logic_rules(model, processor, train_positive, train_negative, device, 
 
     model_device = next(model.parameters()).device
 
+    model = model.to(device)
     # Move all tensors in prepare_inputs to model_device
     for attr in prepare_inputs.__dict__:
         v = getattr(prepare_inputs, attr)
@@ -76,16 +78,12 @@ def infer_logic_rules(model, processor, train_positive, train_negative, device, 
 
     inputs_embeds = model.prepare_inputs_embeds(**prepare_inputs)
 
-    outputs = model.generate(
-        inputs_embeds=inputs_embeds,
-        attention_mask=prepare_inputs.attention_mask,
-        pad_token_id=processor.tokenizer.eos_token_id,
-        bos_token_id=processor.tokenizer.bos_token_id,
-        eos_token_id=processor.tokenizer.eos_token_id,
-        max_new_tokens=512,
-        do_sample=False,
-        use_cache=True
-    )
+    outputs = model.generate(inputs_embeds=inputs_embeds, attention_mask=prepare_inputs.attention_mask,
+                             pad_token_id=processor.tokenizer.eos_token_id,
+                             bos_token_id=processor.tokenizer.bos_token_id,
+                             eos_token_id=processor.tokenizer.eos_token_id,
+                             max_new_tokens=512, do_sample=False, use_cache=True
+                             )
     answer = processor.tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)
     return answer
 
@@ -137,7 +135,6 @@ def evaluate_deepseek(model, processor, test_images, logic_rules, device, princi
         conversation = conversations.deepseek_eval_conversation(image, logic_rules)
         pil_images = load_pil_images(conversation)
 
-
         inputs = processor(
             conversations=conversation,
             images=pil_images,
@@ -166,7 +163,6 @@ def evaluate_deepseek(model, processor, test_images, logic_rules, device, princi
             use_cache=True
         )
         answer = processor.tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)
-
 
         # # inputs = tokenizer.apply_chat_template(
         # #     conversation,
@@ -232,7 +228,6 @@ def run_deepseek(data_path, principle, batch_size, device, img_num, epochs):
         test_positive_videos = load_videos((principle_path / "test" / pattern_folder.name) / "positive", img_num)
         test_negative_videos = load_videos((principle_path / "test" / pattern_folder.name) / "negative", img_num)
 
-
         # Flatten videos to list of frame paths for each video
         train_positive = [frames for frames in train_positive_videos]
         train_negative = [frames for frames in train_negative_videos]
@@ -240,7 +235,6 @@ def run_deepseek(data_path, principle, batch_size, device, img_num, epochs):
         test_negative = [frames for frames in test_negative_videos]
 
         logic_rules = infer_logic_rules(model, processor, train_positive, train_negative, device, principle)
-
 
         test_images = [(frames, 1) for frames in test_positive] + [(frames, 0) for frames in test_negative]
         accuracy, f1, precision, recall = evaluate_deepseek(model, processor, test_images, logic_rules, device, principle)
