@@ -36,11 +36,7 @@ def generate_continuity_smooth_path_video(cs, cc, cz, size, count, output_dir, f
 
 
 def generate_continuity_smooth_path_video_negative(cs, cc, cz, size, count, output_dir, frames=20):
-    import os
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from utils.generators import draw_shape
-    from utils.proximity_utils import assign_group_objects, jitter_position
+
 
     os.makedirs(output_dir, exist_ok=True)
     shape_options = ['circle', 'square', 'triangle']
