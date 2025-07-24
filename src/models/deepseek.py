@@ -28,8 +28,8 @@ def load_deepseek_model(device):
     model = DeepseekVLV2ForCausalLM.from_pretrained(
         model_name,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
+        torch_dtype=torch.bfloat16 if "cuda" in device else torch.float32,
+        device_map=None,
         cache_dir=cache_dir
     ).to(device)
     # model = model.to(device).eval()
