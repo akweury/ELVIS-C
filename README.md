@@ -1,7 +1,7 @@
 # Challenge the ELVIS by yourself: [Click Here](https://akweury.github.io/grb_human_test/)
 
 
-### Category Example: [Click Here](scripts/README.md)
+### Category Example: [Click Here](src/README.md)
 #### Citation
 
 ```
@@ -39,7 +39,7 @@ Generated patterns will be saved in `data/raw_patterns/`.
 ## Benchmarking AI Models
 To evaluate AI models on the dataset:
 ```bash
-python scripts/evaluate_models.py 
+python src/evaluate_models.py 
 ```
 Results will be saved in `data/results/`.
 
@@ -73,6 +73,8 @@ To ensure compatibility across environments, you can use Docker to build and run
 ##### Build
 
 ``` 
+git clone https://github.com/akweury/ELVIS-C.git
+cd ELVIS-C
 docker build -t causal_elvis .
 ```
 
@@ -82,30 +84,38 @@ docker build -t causal_elvis .
 docker run -it --gpus all -v /home/ml-jsha/ELVIS-C:/app -v /home/ml-jsha/storage/deepseek_cache:/models/deepseek_cache --rm causal_elvis:latest 
 ``` 
 
-ln -s /home/ml-jsha/nesy_causal_p/storage/dataset/grb /home/ml-jsha/ELVIS/grb
 
+##### Generate Patterns
+
+``` 
 python -m src.main
-
-
-python -m scripts.evaluate_models --batch_size 100 --principle proximity --img_num 3 --model vit --device_id 0
-python -m scripts.evaluate_models --batch_size 100 --principle similarity --img_num 100 --device_id 1
-python -m scripts.evaluate_models --batch_size 100 --principle closure --img_num 100 --device_id 0
-python -m scripts.evaluate_models --batch_size 100 --principle symmetry --img_num 100 --device_id 5
-python -m scripts.evaluate_models --batch_size 100 --principle continuity --img_num 100 --device_id 5
-
-# train Llava
-python -m scripts.evaluate_models --batch_size 1 --principle proximity --img_num 3 --model llava --device_id 0
-python -m scripts.evaluate_models --batch_size 1 --principle similarity --img_num 3 --model llava --device_id 2
-python -m scripts.evaluate_models --batch_size 1 --principle closure  --img_num 3 --model llava --device_id 3
-python -m scripts.evaluate_models --batch_size 1 --principle symmetry --img_num 3 --model llava  --device_id 4
-python -m scripts.evaluate_models --batch_size 100 --principle continuity --img_num 3 --model llava --device_id 7
-
-# train deepseek
-python -m scripts.evaluate_models --batch_size 1 --principle proximity --model deepseek --device_id 2
-
 ```
 
+##### Test Models
 
+###### train deepseek
+```
+python -m src.evaluate_models --batch_size 1 --principle proximity --model deepseek --device_id 2
+```
+
+##### train ViT
+
+```
+python -m src.evaluate_models --batch_size 100 --principle proximity --img_num 3 --model vit --device_id 0
+python -m src.evaluate_models --batch_size 100 --principle similarity --img_num 100 --device_id 1
+python -m src.evaluate_models --batch_size 100 --principle closure --img_num 100 --device_id 0
+python -m src.evaluate_models --batch_size 100 --principle symmetry --img_num 100 --device_id 5
+python -m src.evaluate_models --batch_size 100 --principle continuity --img_num 100 --device_id 5
+```
+
+###### train Llava
+```
+python -m src.evaluate_models --batch_size 1 --principle proximity --img_num 3 --model llava --device_id 0
+python -m src.evaluate_models --batch_size 1 --principle similarity --img_num 3 --model llava --device_id 2
+python -m src.evaluate_models --batch_size 1 --principle closure  --img_num 3 --model llava --device_id 3
+python -m src.evaluate_models --batch_size 1 --principle symmetry --img_num 3 --model llava  --device_id 4
+python -m src.evaluate_models --batch_size 100 --principle continuity --img_num 3 --model llava --device_id 7
+```
 
 ## File Structure
 ```
@@ -157,8 +167,8 @@ gestalt_benchmark/
 │   │   │── continuity/
 │   │   │   │── train/
 │   │   │   │── test/
-│── scripts/
-│   │── proximity/             # Folder containing scripts for proximity patterns
+│── src/
+│   │── proximity/             # Folder containing src for proximity patterns
 │   │   │── prox_patterns.py
 │   │   │── util...
 │   │── similarity/
