@@ -233,7 +233,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
     model.load_checkpoint(checkpoint_path)
 
-    print(f"Training and Evaluating ViT Model on Gestalt ({principle}) Patterns...")
+    print(f"\n=== Training and Evaluating ViT Model on Gestalt ({principle}) Patterns ===")
     results = {}
     total_accuracy = []
     total_f1_scores = []
@@ -245,22 +245,26 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
 
     pattern_folders = sorted([p for p in (principle_path / "train").iterdir() if p.is_dir()], key=lambda x: x.stem)
 
-    rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Generation', max_iterations=len(pattern_folders))
+    rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_ViT', max_iterations=len(pattern_folders))
     rtpt.start()
-    print(config.root)
+    print(f"Root config path: {config.root}")
+    print(f"Found {len(pattern_folders)} pattern folders for training.")
 
-    for pattern_folder in pattern_folders:
+    for idx, pattern_folder in enumerate(pattern_folders):
+        print(f"\n--- [{idx+1}/{len(pattern_folders)}] Training on pattern: {pattern_folder.stem} ---")
         rtpt.step(subtitle=f"{principle} - {pattern_folder.stem} training started")
         train_loader, num_train_images = get_video_dataloader(pattern_folder, batch_size, img_num)
+        print(f"Number of training videos: {num_train_images}")
         wandb.log({f"{principle}/num_train_images": num_train_images})
         train_vit(model, train_loader, device, checkpoint_path, epochs)
+        print(f"Finished training on {pattern_folder.stem}")
 
         torch.cuda.empty_cache()
 
         test_folder = Path(data_path) / "test" / pattern_folder.stem
         if test_folder.exists():
+            print(f"Evaluating on test set: {test_folder}")
             test_loader, _ = get_video_dataloader(test_folder, batch_size, img_num)
-            # Evaluate: average frame outputs for each video
             model.eval()
             correct, total = 0, 0
             all_labels, all_predictions = [], []
@@ -269,8 +273,8 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
                     B, T, C, H, W = videos.shape
                     videos = videos.view(B * T, C, H, W).to(device, non_blocking=True)
                     labels = labels.to(device, non_blocking=True)
-                    outputs = model(videos)  # (B*T, num_classes)
-                    outputs = outputs.view(B, T, -1).mean(dim=1)  # (B, num_classes)
+                    outputs = model(videos)
+                    outputs = outputs.view(B, T, -1).mean(dim=1)
                     predicted = torch.argmax(outputs, dim=1)
                     all_labels.extend(labels.cpu().numpy())
                     all_predictions.extend(predicted.cpu().numpy())
@@ -279,6 +283,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
             accuracy = 100 * correct / total
             TN, FP, FN, TP = data_utils.confusion_matrix_elements(all_predictions, all_labels)
             precision, recall, f1_score = data_utils.calculate_metrics(TN, FP, FN, TP)
+            print(f"Test results for {pattern_folder.stem}: Accuracy={accuracy:.2f}%, F1={f1_score:.4f}, Precision={precision:.4f}, Recall={recall:.4f}")
             wandb.log({
                 f"{principle}/test_accuracy": accuracy,
                 f"{principle}/f1_score": f1_score,
@@ -296,6 +301,8 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
             total_precision_scores.append(precision)
             total_recall_scores.append(recall)
             torch.cuda.empty_cache()
+        else:
+            print(f"Test folder {test_folder} does not exist. Skipping evaluation.")
 
     avg_f1_scores = sum(total_f1_scores) / len(total_f1_scores) if total_f1_scores else 0
     avg_accuracy = sum(total_accuracy) / len(total_accuracy) if total_accuracy else 0
@@ -309,15 +316,18 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
         f"average_recall_{principle}": avg_recall
     })
 
-    print(
-        f"Average Metrics for {principle}:\n  - Accuracy: {avg_accuracy:.2f}%\n  - F1 Score: {avg_f1_scores:.4f}\n  - Precision: {avg_precision:.4f}\n  - Recall: {avg_recall:.4f}")
+    print(f"\n=== Average Metrics for {principle} ===")
+    print(f"  - Accuracy: {avg_accuracy:.2f}%")
+    print(f"  - F1 Score: {avg_f1_scores:.4f}")
+    print(f"  - Precision: {avg_precision:.4f}")
+    print(f"  - Recall: {avg_recall:.4f}")
 
     os.makedirs(config.output_dir / principle, exist_ok=True)
     results_path = config.output_dir / principle / f"{model_name}_{img_num}_evaluation_results.json"
     with open(results_path, "w") as json_file:
         json.dump(results, json_file, indent=4)
 
-    print("Training and evaluation complete. Results saved to evaluation_results.json.")
+    print(f"\nTraining and evaluation complete. Results saved to {results_path}.")
     model.save_checkpoint(checkpoint_path)
     wandb.finish()
 
