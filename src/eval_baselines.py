@@ -40,11 +40,11 @@ if __name__ == "__main__":
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    # Determine device based on device_id flag
-    if args.device_id is not None and torch.cuda.is_available():
-        device = f"cuda:{args.device_id}"
-    else:
-        device = "cpu"
+    # # Determine device based on device_id flag
+    # if args.device_id is not None and torch.cuda.is_available():
+    #     device = f"cuda:{args.device_id}"
+    # else:
+    #     device = "cpu"
 
     # Construct the data path based on the principle argument
     prin_path = config.raw_patterns/args.principle
