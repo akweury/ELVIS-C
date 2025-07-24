@@ -28,9 +28,9 @@ NUM_CLASSES = 2  # Positive and Negative
 ACCUMULATION_STEPS = 1  # Reduce accumulation steps for faster updates  # Gradient accumulation steps
 
 
-def init_wandb(batch_size, epochs):
+def init_wandb(batch_size, epochs, principle):
     # Initialize Weights & Biases (WandB)
-    wandb.init(project="ViT-Gestalt-Patterns", config={
+    wandb.init(project=f"ELVIS-C-ViT-{principle}", config={
         "batch_size": batch_size,
         "image_size": IMAGE_SIZE,
         "num_classes": NUM_CLASSES,
@@ -226,7 +226,7 @@ def evaluate_vit(model, test_loader, device, principle, pattern_name):
 
 # Python
 def run_vit(data_path, principle, batch_size, device, img_num, epochs):
-    init_wandb(batch_size, epochs)
+    init_wandb(batch_size, epochs, principle)
     model_name = "vit_base_patch16_224"
     checkpoint_path = config.output_dir / principle / f"{model_name}_{img_num}checkpoint.pth"
     device = torch.device(device)
