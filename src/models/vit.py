@@ -136,6 +136,7 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=5e-5, betas=(0.9, 0.999))  # Faster convergence
     scaler = torch.cuda.amp.GradScaler()  # Ensure AMP is enabled
+    model.to(device)
     model.train()
 
 
@@ -165,6 +166,7 @@ from sklearn.metrics import confusion_matrix
 
 
 def evaluate_vit(model, test_loader, device, principle, pattern_name):
+    model.to(device)
     model.eval()
     correct, total = 0, 0
     all_labels = []
@@ -193,33 +195,18 @@ def evaluate_vit(model, test_loader, device, principle, pattern_name):
     precision, recall, f1_score = data_utils.calculate_metrics(TN, FP, FN, TP)
 
     print(f"TN: {TN}, FP: {FP}, FN: {FN}, TP: {TP}")
-    # print(f"Precision: {precision:.4f}")
-    # print(f"Recall: {recall:.4f}")
-    # print(f"F1-score: {f1_score:.4f}")
-    # Manual Precision and Recall Calculation
-    # precision = TP / (TP + FP) if (TP + FP) > 0 else 0  # Precision = TP / (TP + FP)
-    # recall = TP / (TP + FN) if (TP + FN) > 0 else 0  # Recall = TP / (TP + FN)
-    #
-    # # Manual F1 Score Calculation
-    # if precision + recall > 0:
-    #     f1 = 2 * (precision * recall) / (precision + recall)
-    # else:
-    #     f1 = 0  # Avoid division by zero
+    print(
+        f"({principle}) Test Accuracy for {pattern_name}: {accuracy:.2f}% | F1 Score: {f1_score:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f}")
 
-    # Log results
+    print(f"True Negatives (TN): {TN}, False Positives (FP): {FP}")
+    print(f"False Negatives (FN): {FN}, True Positives (TP): {TP}")
+
     wandb.log({
         f"{principle}/test_accuracy": accuracy,
         f"{principle}/f1_score": f1_score,
         f"{principle}/precision": precision,
         f"{principle}/recall": recall
     })
-
-    # Print metrics
-    print(
-        f"({principle}) Test Accuracy for {pattern_name}: {accuracy:.2f}% | F1 Score: {f1_score:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f}")
-
-    print(f"True Negatives (TN): {TN}, False Positives (FP): {FP}")
-    print(f"False Negatives (FN): {FN}, True Positives (TP): {TP}")
 
     return accuracy, f1_score, precision, recall
 
