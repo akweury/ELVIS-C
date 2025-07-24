@@ -120,7 +120,8 @@ class ViTClassifier(nn.Module):
 
     def load_checkpoint(self, filepath, device):
         if Path(filepath).exists():
-            self.load_state_dict(torch.load(filepath)).to(device)
+            self.to(device)
+            self.load_state_dict(torch.load(filepath, map_location=device))
             print(f"Checkpoint loaded from {filepath}")
         else:
             print("No checkpoint found, starting from scratch.")
