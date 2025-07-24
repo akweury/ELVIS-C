@@ -141,7 +141,6 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
     optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=5e-5, betas=(0.9, 0.999))  # Faster convergence
     scaler = torch.cuda.amp.GradScaler()  # Ensure AMP is enabled
     model.to(device)
-    print(f"[train_vit] Model device: {next(model.parameters()).device}")
     model.train()
 
     for epoch in range(epochs):
@@ -151,8 +150,6 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
             B, T, C, H, W = videos.shape
             videos = videos.view(B * T, C, H, W).to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
-            print(f"[train_vit] videos device: {videos.device}, labels device: {labels.device}")
-
             with torch.cuda.amp.autocast():
                 outputs = model(videos)  # (B*T, num_classes)
                 outputs = outputs.view(B, T, -1).mean(dim=1)  # (B, num_classes)
@@ -183,7 +180,6 @@ def evaluate_vit(model, test_loader, device, principle, pattern_name):
         for images, labels in test_loader:
             images = images.to(device, non_blocking=True)
             labels = labels.to(device, non_blocking=True)
-            print(f"[evaluate_vit] images device: {images.device}, labels device: {labels.device}")
             with torch.cuda.amp.autocast(enabled=(device != "cpu")):
                 outputs = model(images)
             predicted = torch.argmax(outputs, dim=1)
@@ -222,7 +218,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model_name = "vit_base_patch16_224"
     checkpoint_path = config.output_dir / principle / f"{model_name}_{img_num}checkpoint.pth"
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
-    print(f"[run_vit test] model device: {next(model.parameters()).device}")
+
 
     model.load_checkpoint(checkpoint_path, device)
 
