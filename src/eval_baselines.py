@@ -26,10 +26,10 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int)
     args = parser.parse_args()
 
-    if args.device_id is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.device_id)
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    # if args.device_id is not None:
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.device_id)
+    # else:
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     from src.models import vit
     # from src.models import llava
