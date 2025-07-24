@@ -14,8 +14,11 @@ from pathlib import Path
 from torch.utils.data import DataLoader, Subset
 from collections import defaultdict
 from rtpt import RTPT  # Real-Time Progress Tracker for PyTorch
-from src import config
+from PIL import Image
+from torch.utils.data import Dataset
 
+
+from src import config
 from src.utils import data_utils
 
 # Configuration
@@ -34,6 +37,50 @@ def init_wandb(batch_size, epochs):
         "epochs": epochs
     })
 
+class VideoDataset(Dataset):
+    def __init__(self, root_dir, frames_per_clip=16, transform=None):
+        self.samples = []
+        self.transform = transform
+        self.frames_per_clip = frames_per_clip
+        for task_dir in Path(root_dir).iterdir():
+            for label_dir in ['positive', 'negative']:
+                label_path = task_dir / label_dir
+                if not label_path.exists():
+                    continue
+                label = 1 if label_dir == 'positive' else 0
+                for example_dir in label_path.iterdir():
+                    frame_paths = sorted(example_dir.glob('frame_*.png'))
+                    if len(frame_paths) == 0:
+                        continue
+                    self.samples.append((frame_paths, label))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        frame_paths, label = self.samples[idx]
+        frames = []
+        for i in range(self.frames_per_clip):
+            if i < len(frame_paths):
+                img = Image.open(frame_paths[i]).convert('RGB')
+                if self.transform:
+                    img = self.transform(img)
+            else:
+                img = torch.zeros(3, 224, 224)  # Pad missing frames
+            frames.append(img)
+        video_tensor = torch.stack(frames)  # (frames_per_clip, C, H, W)
+        return video_tensor, label
+
+# Python
+def get_video_dataloader(data_dir, batch_size, frames_per_clip=16, num_workers=2):
+    transform = transforms.Compose([
+        transforms.Resize(224),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
+    dataset = VideoDataset(data_dir, frames_per_clip=frames_per_clip, transform=transform)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers), len(data_dir)
 
 def get_dataloader(data_dir, batch_size, img_num, num_workers=2, pin_memory=True, prefetch_factor=None):
     transform = transforms.Compose([
@@ -179,8 +226,6 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
     model.load_checkpoint(checkpoint_path)
 
-
-
     print(f"Training and Evaluating ViT Model on Gestalt ({principle}) Patterns...")
     results = {}
     total_accuracy = []
@@ -202,7 +247,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
         # Update the RTPT (subtitle is optional)
         rtpt.step(subtitle=f"{principle} - {pattern_folder.stem} training started")
 
-        train_loader, num_train_images = get_dataloader(pattern_folder, batch_size, img_num)
+        train_loader, num_train_images = get_video_dataloader(pattern_folder, batch_size, img_num)
         wandb.log({f"{principle}/num_train_images": num_train_images})
         train_vit(model, train_loader, device, checkpoint_path, epochs)
 
@@ -210,7 +255,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
 
         test_folder = Path(data_path) / "test" / pattern_folder.stem
         if test_folder.exists():
-            test_loader, _ = get_dataloader(test_folder, batch_size, img_num)
+            test_loader, _ = get_video_dataloader(test_folder, batch_size, img_num)
             accuracy, f1, precision, recall = evaluate_vit(model, test_loader, device, principle, pattern_folder.stem)
             results[principle][pattern_folder.stem] = {
                 "accuracy": accuracy,
