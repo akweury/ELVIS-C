@@ -213,8 +213,8 @@ def evaluate_deepseek(model, processor, test_images, logic_rules, device, princi
 
 
 def run_deepseek(data_path, principle, batch_size, device, img_num, epochs):
-    # init_wandb(batch_size)
-    # model, processor, tokenizer = load_deepseek_model(device)
+    init_wandb(batch_size)
+    model, processor, tokenizer = load_deepseek_model(device)
     principle_path = Path(data_path)
 
     pattern_folders = sorted(
