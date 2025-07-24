@@ -17,7 +17,6 @@ from rtpt import RTPT  # Real-Time Progress Tracker for PyTorch
 from PIL import Image
 from torch.utils.data import Dataset
 
-
 from src import config
 from src.utils import data_utils
 
@@ -36,6 +35,7 @@ def init_wandb(batch_size, epochs, principle):
         "num_classes": NUM_CLASSES,
         "epochs": epochs
     })
+
 
 class VideoDataset(Dataset):
     def __init__(self, root_dir, frames_per_clip=16, transform=None):
@@ -71,6 +71,7 @@ class VideoDataset(Dataset):
         video_tensor = torch.stack(frames)  # (frames_per_clip, C, H, W)
         return video_tensor, label
 
+
 # Python
 def get_video_dataloader(data_dir, batch_size, frames_per_clip=16, num_workers=0):
     transform = transforms.Compose([
@@ -81,6 +82,7 @@ def get_video_dataloader(data_dir, batch_size, frames_per_clip=16, num_workers=0
     ])
     dataset = VideoDataset(data_dir, frames_per_clip=frames_per_clip, transform=transform)
     return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers), len(dataset)
+
 
 def get_dataloader(data_dir, batch_size, img_num, num_workers=2, pin_memory=True, prefetch_factor=None):
     transform = transforms.Compose([
@@ -110,6 +112,7 @@ def get_dataloader(data_dir, batch_size, img_num, num_workers=2, pin_memory=True
                       pin_memory=pin_memory, prefetch_factor=prefetch_factor,
                       persistent_workers=(num_workers > 0)), len(subset_dataset)
 
+
 # Load Pretrained ViT Model
 class ViTClassifier(nn.Module):
     def save_checkpoint(self, filepath):
@@ -138,7 +141,6 @@ def train_vit(model, train_loader, device, checkpoint_path, epochs):
     scaler = torch.cuda.amp.GradScaler()  # Ensure AMP is enabled
     model.to(device)
     model.train()
-
 
     for epoch in range(epochs):
         optimizer.zero_grad()
@@ -236,7 +238,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     print(f"Found {len(pattern_folders)} pattern folders for training.")
 
     for idx, pattern_folder in enumerate(pattern_folders):
-        print(f"\n--- [{idx+1}/{len(pattern_folders)}] Training on pattern: {pattern_folder.stem} ---")
+        print(f"\n--- [{idx + 1}/{len(pattern_folders)}] Training on pattern: {pattern_folder.stem} ---")
         rtpt.step(subtitle=f"")
         train_loader, num_train_images = get_video_dataloader(pattern_folder, batch_size, img_num)
         print(f"Number of training videos: {num_train_images}")
@@ -269,12 +271,23 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
             TN, FP, FN, TP = data_utils.confusion_matrix_elements(all_predictions, all_labels)
             precision, recall, f1_score = data_utils.calculate_metrics(TN, FP, FN, TP)
             print(f"Test results for {pattern_folder.stem}: Accuracy={accuracy:.2f}%, F1={f1_score:.4f}, Precision={precision:.4f}, Recall={recall:.4f}")
+
+            avg_f1_scores = sum(total_f1_scores) / len(total_f1_scores) if total_f1_scores else 0
+            avg_accuracy = sum(total_accuracy) / len(total_accuracy) if total_accuracy else 0
+            avg_precision = sum(total_precision_scores) / len(total_precision_scores) if total_precision_scores else 0
+            avg_recall = sum(total_recall_scores) / len(total_recall_scores) if total_recall_scores else 0
             wandb.log({
                 f"{principle}/test_accuracy": accuracy,
                 f"{principle}/f1_score": f1_score,
                 f"{principle}/precision": precision,
-                f"{principle}/recall": recall
+                f"{principle}/recall": recall,
+                f"{principle}/average_f1_score": avg_f1_scores,
+                f"{principle}/average_accuracy": avg_accuracy,
+                f"{principle}/average_precision": avg_precision,
+                f"{principle}/average_recall": avg_recall
             })
+
+
             results[principle][pattern_folder.stem] = {
                 "accuracy": accuracy,
                 "f1_score": f1_score,
@@ -289,17 +302,17 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
         else:
             print(f"Test folder {test_folder} does not exist. Skipping evaluation.")
 
-    avg_f1_scores = sum(total_f1_scores) / len(total_f1_scores) if total_f1_scores else 0
-    avg_accuracy = sum(total_accuracy) / len(total_accuracy) if total_accuracy else 0
-    avg_precision = sum(total_precision_scores) / len(total_precision_scores) if total_precision_scores else 0
-    avg_recall = sum(total_recall_scores) / len(total_recall_scores) if total_recall_scores else 0
-
-    wandb.log({
-        f"average_f1_scores_{principle}": avg_f1_scores,
-        f"average_test_accuracy_{principle}": avg_accuracy,
-        f"average_precision_{principle}": avg_precision,
-        f"average_recall_{principle}": avg_recall
-    })
+    # avg_f1_scores = sum(total_f1_scores) / len(total_f1_scores) if total_f1_scores else 0
+    # avg_accuracy = sum(total_accuracy) / len(total_accuracy) if total_accuracy else 0
+    # avg_precision = sum(total_precision_scores) / len(total_precision_scores) if total_precision_scores else 0
+    # avg_recall = sum(total_recall_scores) / len(total_recall_scores) if total_recall_scores else 0
+    #
+    # wandb.log({
+    #     f"average_f1_scores_{principle}": avg_f1_scores,
+    #     f"average_test_accuracy_{principle}": avg_accuracy,
+    #     f"average_precision_{principle}": avg_precision,
+    #     f"average_recall_{principle}": avg_recall
+    # })
 
     print(f"\n=== Average Metrics for {principle} ===")
     print(f"  - Accuracy: {avg_accuracy:.2f}%")
@@ -315,6 +328,7 @@ def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     print(f"\nTraining and evaluation complete. Results saved to {results_path}.")
     model.save_checkpoint(checkpoint_path)
     wandb.finish()
+
 
 torch.set_num_threads(torch.get_num_threads())  # Utilize all available threads efficiently
 os.environ['OMP_NUM_THREADS'] = str(torch.get_num_threads())  # Limit OpenMP threads
