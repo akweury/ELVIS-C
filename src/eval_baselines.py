@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # List of baseline models
     baseline_models = [
         {"name": "ViT-Base-Patch32-384", "module": vit.run_vit},
-        {"name": "Llava", "module": llava.run_llava},
+        # {"name": "Llava", "module": llava.run_llava},
         {"name": "deepseek", "module": deepseek.run_deepseek},
     ]
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     elif args.model == "vit":
         model = baseline_models[0]
     elif args.model == "deepseek":
-        model = baseline_models[2]
+        model = baseline_models[1]
     else:
         raise ValueError(f"Model {args.model} is not supported. Choose from {', '.join([m['name'] for m in baseline_models])}.")
 
