@@ -31,7 +31,7 @@ def load_deepseek_model(device):
         torch_dtype=torch.bfloat16,
         device_map="auto",
         cache_dir=cache_dir
-    )
+    ).to(device)
     # model = model.to(device).eval()
     tokenizer = processor.tokenizer
     return model, processor, tokenizer
