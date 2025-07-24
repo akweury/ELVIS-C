@@ -13,7 +13,7 @@ def load_task_modules_from_patterns():
     for principle_dir in base_path.iterdir():
         if principle_dir.is_dir() and (principle_dir / "pattern.py").exists():
             task_modules[principle_dir.name] = {}
-            module_name = f"patterns.{principle_dir.name}.pattern"
+            module_name = f"src.patterns.{principle_dir.name}.pattern"
             module = importlib.import_module(module_name)
             if hasattr(module, "register_tasks"):
                 tasks = module.register_tasks()
