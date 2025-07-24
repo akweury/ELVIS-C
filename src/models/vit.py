@@ -224,12 +224,10 @@ def evaluate_vit(model, test_loader, device, principle, pattern_name):
     return accuracy, f1_score, precision, recall
 
 
-# Python
 def run_vit(data_path, principle, batch_size, device, img_num, epochs):
     init_wandb(batch_size, epochs, principle)
     model_name = "vit_base_patch16_224"
     checkpoint_path = config.output_dir / principle / f"{model_name}_{img_num}checkpoint.pth"
-    device = torch.device(device)
     model = ViTClassifier(model_name).to(device, memory_format=torch.channels_last)
     model.load_checkpoint(checkpoint_path)
 
