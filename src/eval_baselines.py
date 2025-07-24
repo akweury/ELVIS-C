@@ -31,7 +31,7 @@ if __name__ == "__main__":
     #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
     from src.models import vit
-    from src.models import llava
+    # from src.models import llava
     from src.models import deepseek
     import torch
 
