@@ -47,8 +47,13 @@ if __name__ == "__main__":
 
     if args.model == "llava":
         model = baseline_models[1]
-    else:
+    elif args.model == "vit":
         model = baseline_models[0]
+    elif args.model == "deepseek":
+        model = baseline_models[2]
+    else:
+        raise ValueError(f"Model {args.model} is not supported. Choose from {', '.join([m['name'] for m in baseline_models])}.")
+
     evaluate_model(model, args.principle, args.batch_size, prin_path, device, args.img_num, args.epochs)
 
     print("All model evaluations completed.")
