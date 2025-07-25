@@ -94,8 +94,9 @@ def generate_continuity_smooth_path_task_batch(cs, cc, cz, obj_size, obj_count, 
         gif_path = pos_dir / f"{i:05d}.gif"
         mp4_path = pos_dir / f"{i:05d}.mp4"
         imageio.mimsave(str(gif_path), images, duration=0.1)
-        imageio.mimsave(str(mp4_path), images, fps=10, macro_block_size=None, plugin='ffmpeg')
-
+        with imageio.get_writer(str(mp4_path), fps=10, macro_block_size=None, plugin='ffmpeg') as writer:
+            for img in images:
+                writer.append_data(img)
     for i in range(num_per_class):
         out_dir = neg_dir / f"{i:05d}"
         generate_continuity_smooth_path_video_negative(cs, cc, cz, obj_size, obj_count, str(out_dir))
@@ -104,7 +105,9 @@ def generate_continuity_smooth_path_task_batch(cs, cc, cz, obj_size, obj_count, 
         gif_path = neg_dir / f"{i:05d}.gif"
         mp4_path = neg_dir / f"{i:05d}.mp4"
         imageio.mimsave(str(gif_path), images, duration=0.1)
-        imageio.mimsave(str(mp4_path), images, fps=10, macro_block_size=None, plugin='ffmpeg')
+        with imageio.get_writer(str(mp4_path), fps=10, macro_block_size=None, plugin='ffmpeg') as writer:
+            for img in images:
+                writer.append_data(img)
 
     combine_gifs(pos_dir, neg_dir, base_path / "combined.gif")
 
