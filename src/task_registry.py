@@ -16,15 +16,11 @@ def load_task_modules_from_patterns():
             module_name = f"src.patterns.{principle_dir.name}.pattern"
             module = importlib.import_module(module_name)
             if hasattr(module, "register_tasks"):
-                tasks = module.register_tasks()
-                for name, task in tasks.items():
+                tasks, names = module.register_tasks()
+                for task, name in zip(tasks, names):
                     id_str = f"{task_id:04d}"
                     task_modules[principle_dir.name][f"{id_str}_{name}"] = task
                     task_id += 1
                     if task_id > 9999:
                         break
     return task_modules
-
-
-
-

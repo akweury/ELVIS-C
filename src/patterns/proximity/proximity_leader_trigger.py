@@ -4,132 +4,129 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 import imageio
-
-from src.utils.generators import draw_shape, combine_gifs
+import random
+from src.utils.generators import draw_shape, combine_gifs, draw_shape_cv2, get_proper_sublist
 from src.utils.proximity_utils import assign_group_objects, jitter_position
+import cv2
+import math
 
-def generate_proximity_leader_trigger_video(cs, cc, cz, size, count, output_dir, frames=20):
-    os.makedirs(output_dir, exist_ok=True)
-    shape_options = ['circle', 'square', 'triangle']
-    color_options = ['blue', 'green', 'orange']
-    size_options = [size * 0.8, size, size * 1.2]
+from src import config
 
-    objs = assign_group_objects(
-        count, shape_options, color_options, size_options,
-        cs, cc, cz, (0.2, 0.8), (0.2, 0.8)
-    )
-    leader = objs[0]
-    obstacle_center = np.array([0.5, 0.5])
-    obstacle_radius = 0.15
+def line_circle_intersect(p1, p2, center, radius):
+    # Check if the segment p1-p2 intersects the circle
+    d = p2 - p1
+    f = p1 - center
+    a = np.dot(d, d)
+    b = 2 * np.dot(f, d)
+    c = np.dot(f, f) - radius ** 2
+    discriminant = b ** 2 - 4 * a * c
+    if discriminant < 0:
+        return False  # No intersection
+    discriminant = math.sqrt(discriminant)
+    t1 = (-b - discriminant) / (2 * a)
+    t2 = (-b + discriminant) / (2 * a)
+    return (0 <= t1 <= 1) or (0 <= t2 <= 1)
 
-    for t in range(frames):
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        circle = plt.Circle(obstacle_center, obstacle_radius, color='red', alpha=0.3)
-        ax.add_patch(circle)
+def generate_proximity_leader_trigger_video(params, irrel_param, grp_num, obj_num, obj_size, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
+    img_size = config.img_size
 
-        # Leader moves towards obstacle
-        leader['pos'] += (obstacle_center - leader['pos']) * 0.08
-        leader['pos'] = jitter_position(leader['pos'], scale=0.005)
-        leader['pos'] = np.clip(leader['pos'], 0.05, 0.95)
-        draw_shape(ax, leader['shape'], leader['pos'], leader['size'], leader['color'])
+    settings = {
+        "red_start": np.array([0.1, 0.1]),
+        "obstacle_radius": 0.15,
+        "obstacle_center": np.array([0.5, 0.5]),
+        "x_range": (0.2, 0.8),
+        "y_range": (0.2, 0.8),
+    }
+    logic = {"shape": ["square", "circle"],
+             "color": ["green", "yellow"],
+             "size": [obj_size],
+             "count": True}
 
-        # Others react only if leader is close
-        leader_dist = np.linalg.norm(leader['pos'] - obstacle_center)
+    # Decide if red moves to center or to a random point outside the circle
+    move_to_center = random.choice([True, False])
+    if move_to_center:
+        red_end = settings["obstacle_center"]
+    else:
+        # Pick a random point such that the line does NOT intersect the circle
+        while True:
+            candidate = np.random.uniform(0.1, 0.9, size=2)
+            if np.linalg.norm(candidate - settings["obstacle_center"]) > settings["obstacle_radius"] + 0.05:
+                if not line_circle_intersect(settings["red_start"], candidate, settings["obstacle_center"], settings["obstacle_radius"]):
+                    red_end = candidate
+                    break
+
+    cs = True if "shape" in params else False
+    cc = True if "color" in params else False
+    cz = True if "size" in params else False
+
+    if "shape" in irrel_param:
+        logic["shape"] = random.choice(config.all_shapes)
+    if "color" in irrel_param:
+        logic["color"] = random.choice(config.color_large_exclude_gray)
+    if "size" in irrel_param:
+        logic["size"] = random.choice(list(config.size_map.values()))
+
+    objs = []
+    objs += assign_group_objects(1, logic["shape"], ["red"], logic["size"], cs, cc, cz,
+                                settings["x_range"], settings["y_range"])
+    objs += assign_group_objects(obj_num, logic["shape"], logic["color"], logic["size"], cs, cc, cz,
+                                settings["x_range"], settings["y_range"])
+    red_entered = False
+
+    for t in range(config.frame_length):
+        img = np.ones((img_size, img_size, 3), dtype=np.uint8) * 255
+
+        # Draw transparent obstacle
+        center_px = (int(settings["obstacle_center"][0] * img_size), int(settings["obstacle_center"][1] * img_size))
+        radius_px = int(settings["obstacle_radius"] * img_size)
+        overlay = img.copy()
+        cv2.circle(overlay, center_px, radius_px, (0, 0, 255), -1)
+        cv2.addWeighted(overlay, 0.3, img, 0.7, 0, img)
+
+        # Move red object along straight line, always moving
+        alpha = min(1.0, t / (config.frame_length - 1))
+        objs[0]['pos'] = (1 - alpha) * settings["red_start"] + alpha * red_end
+        objs[0]['pos'] = jitter_position(objs[0]['pos'], scale=0.003)
+        # Check if red entered the circle
+        if move_to_center and not red_entered:
+            if np.linalg.norm(objs[0]['pos'] - settings["obstacle_center"]) < settings["obstacle_radius"]:
+                red_entered = True
+        draw_shape_cv2(img, objs[0]['shape'], objs[0]['pos'], objs[0]['size'], objs[0]['color'])
+
+        # Move other objects
         for obj in objs[1:]:
-            if leader_dist < obstacle_radius + 0.05:
-                # Move away from obstacle
-                vec = obj['pos'] - obstacle_center
+            if move_to_center and red_entered:
+                vec = obj['pos'] - settings["obstacle_center"]
                 dist = np.linalg.norm(vec)
                 direction = vec / (dist + 1e-6)
                 obj['pos'] += direction * 0.03
             else:
-                # Stay or jitter
                 obj['pos'] = jitter_position(obj['pos'], scale=0.005)
             obj['pos'] = np.clip(obj['pos'], 0.05, 0.95)
-            draw_shape(ax, obj['shape'], obj['pos'], obj['size'], obj['color'])
+            draw_shape_cv2(img, obj['shape'], obj['pos'], obj['size'], obj['color'])
 
-        fig.savefig(f"{output_dir}/frame_{t:03d}.png")
-        plt.close()
+        cv2.imwrite(f"{out_dir}/frame_{t:03d}.png", img)
 
-def generate_proximity_leader_trigger_video_negative(cs, cc, cz, size, count, output_dir, frames=20):
-    os.makedirs(output_dir, exist_ok=True)
-    shape_options = ['circle', 'square', 'triangle']
-    color_options = ['blue', 'green', 'orange']
-    size_options = [size * 0.8, size, size * 1.2]
 
-    objs = assign_group_objects(
-        count, shape_options, color_options, size_options,
-        cs, cc, cz, (0.2, 0.8), (0.2, 0.8)
-    )
-    leader = objs[0]
-    obstacle_center = np.array([0.5, 0.5])
-    obstacle_radius = 0.15
-
-    for t in range(frames):
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-        circle = plt.Circle(obstacle_center, obstacle_radius, color='red', alpha=0.3)
-        ax.add_patch(circle)
-
-        # Leader moves randomly, never approaches obstacle
-        leader['pos'] = jitter_position(leader['pos'], scale=0.02)
-        leader['pos'] = np.clip(leader['pos'], 0.05, 0.95)
-        draw_shape(ax, leader['shape'], leader['pos'], leader['size'], leader['color'])
-
-        # Others do not react
-        for obj in objs[1:]:
-            obj['pos'] = jitter_position(obj['pos'], scale=0.005)
-            obj['pos'] = np.clip(obj['pos'], 0.05, 0.95)
-            draw_shape(ax, obj['shape'], obj['pos'], obj['size'], obj['color'])
-
-        fig.savefig(f"{output_dir}/frame_{t:03d}.png")
-        plt.close()
-
-def generate_proximity_leader_trigger_task_batch(cs, cc, cz, obj_size, obj_count, base_dir, num_per_class=10):
-    base_path = Path(base_dir)
+def generate_proximity_leader_trigger_task_batch(id, base_path, param, irrel_param, grp_num, obj_num_name):
     pos_dir = base_path / "positive"
     neg_dir = base_path / "negative"
     pos_dir.mkdir(parents=True, exist_ok=True)
     neg_dir.mkdir(parents=True, exist_ok=True)
 
-    for i in range(num_per_class):
-        out_dir = pos_dir / f"{i:05d}"
-        generate_proximity_leader_trigger_video(cs, cc, cz, obj_size, obj_count, str(out_dir))
-        frame_paths = [out_dir / f"frame_{t:03d}.png" for t in range(20)]
-        images = [imageio.imread(str(p)) for p in frame_paths]
-        gif_path = pos_dir / f"{i:05d}.gif"
-        mp4_path = pos_dir / f"{i:05d}.mp4"
-        imageio.mimsave(str(gif_path), images, duration=0.1)
-        imageio.mimsave(str(mp4_path), images, fps=10, macro_block_size=None)
+    out_dir = pos_dir / f"{id:05d}"
+    obj_size = config.size_map[obj_num_name]
+    obj_num = config.standard_quantity_dict[obj_num_name]
+    generate_proximity_leader_trigger_video(param, irrel_param, grp_num, obj_num, obj_size, str(out_dir))
+    frame_paths = [out_dir / f"frame_{t:03d}.png" for t in range(20)]
+    images = [imageio.imread(str(p)) for p in frame_paths]
+    gif_path = pos_dir / f"{id:05d}.gif"
+    imageio.mimsave(str(gif_path), images, duration=0.1)
 
-    for i in range(num_per_class):
-        out_dir = neg_dir / f"{i:05d}"
-        generate_proximity_leader_trigger_video_negative(cs, cc, cz, obj_size, obj_count, str(out_dir))
-        frame_paths = [out_dir / f"frame_{t:03d}.png" for t in range(20)]
-        images = [imageio.imread(str(p)) for p in frame_paths]
-        gif_path = neg_dir / f"{i:05d}.gif"
-        mp4_path = neg_dir / f"{i:05d}.mp4"
-        imageio.mimsave(str(gif_path), images, duration=0.1)
-        imageio.mimsave(str(mp4_path), images, fps=10, macro_block_size=None)
 
-    combine_gifs(pos_dir, neg_dir, base_path / "combined.gif")
+def proximity_leader_trigger_task_fn(id, save_dir, task_name, param, irrel_param, grp_num, obj_num):
+    base_path = Path(save_dir)
+    generate_proximity_leader_trigger_task_batch(id, base_path, param, irrel_param, grp_num, obj_num)
 
-def proximity_leader_trigger_task_fn(cs, cc, cz, size_label):
-    size_map = {'s': 0.05, 'm': 0.08, 'l': 0.12}
-    count_map = {'s': 5, 'm': 10, 'l': 15}
-    obj_size = size_map[size_label]
-    obj_count = count_map[size_label]
-
-    def task_fn(output_dir: str, num_pos: int, num_neg: int):
-        generate_proximity_leader_trigger_task_batch(
-            cs=cs, cc=cc, cz=cz,
-            obj_size=obj_size, obj_count=obj_count,
-            base_dir=output_dir,
-            num_per_class=min(num_pos, num_neg)
-        )
-    return task_fn
+    # generate combined GIFs for positive and negative samples
