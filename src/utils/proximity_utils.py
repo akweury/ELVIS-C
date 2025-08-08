@@ -6,14 +6,14 @@ import random
 
 def assign_group_objects(count, shape_options, color_options, size_options, cs, cc, cz, x_range, y_range):
     """Assigns properties to a group of objects based on flags."""
-    group_shape = random.choice(shape_options) if cs else None
-    group_color = random.choice(color_options) if cc else None
-    group_size = random.choice(size_options) if cz else None
+    group_shape = random.choice(shape_options) if cs else "circle"
+    group_color = random.choice(color_options) if cc else "blue"
+    group_size = random.choice(size_options) if cz else 0.12
     objs = []
     for _ in range(count):
-        obj_shape = group_shape if cs else random.choice(shape_options)
-        obj_color = group_color if cc else random.choice(color_options)
-        obj_size = group_size if cz else random.choice(size_options)
+        obj_shape = group_shape
+        obj_color = group_color
+        obj_size = group_size
         pos = np.array([np.random.uniform(*x_range), np.random.uniform(*y_range)])
         objs.append({'pos': pos, 'shape': obj_shape, 'color': obj_color, 'size': obj_size})
     return objs

@@ -9,8 +9,10 @@ from src.utils.generators import draw_shape, combine_gifs, draw_shape_cv2, get_p
 from src.utils.proximity_utils import assign_group_objects, jitter_position
 import cv2
 import math
+import json
 
 from src import config
+
 
 def line_circle_intersect(p1, p2, center, radius):
     # Check if the segment p1-p2 intersects the circle
@@ -26,6 +28,7 @@ def line_circle_intersect(p1, p2, center, radius):
     t1 = (-b - discriminant) / (2 * a)
     t2 = (-b + discriminant) / (2 * a)
     return (0 <= t1 <= 1) or (0 <= t2 <= 1)
+
 
 def generate_proximity_leader_trigger_video(params, irrel_param, grp_num, obj_num, obj_size, out_dir):
     os.makedirs(out_dir, exist_ok=True)
@@ -61,17 +64,17 @@ def generate_proximity_leader_trigger_video(params, irrel_param, grp_num, obj_nu
     cz = True if "size" in params else False
 
     if "shape" in irrel_param:
-        logic["shape"] = random.choice(config.all_shapes)
+        logic["shape"] = [random.choice(config.all_shapes)]
     if "color" in irrel_param:
-        logic["color"] = random.choice(config.color_large_exclude_gray)
+        logic["color"] = [random.choice(config.color_large_exclude_gray)]
     if "size" in irrel_param:
-        logic["size"] = random.choice(list(config.size_map.values()))
+        logic["size"] = [random.choice(list(config.size_map.values()))]
 
     objs = []
-    objs += assign_group_objects(1, logic["shape"], ["red"], logic["size"], cs, cc, cz,
-                                settings["x_range"], settings["y_range"])
+    objs += assign_group_objects(1, logic["shape"], ["red"], logic["size"], cs, True, cz,
+                                 settings["x_range"], settings["y_range"])
     objs += assign_group_objects(obj_num, logic["shape"], logic["color"], logic["size"], cs, cc, cz,
-                                settings["x_range"], settings["y_range"])
+                                 settings["x_range"], settings["y_range"])
     red_entered = False
 
     for t in range(config.frame_length):
@@ -107,6 +110,22 @@ def generate_proximity_leader_trigger_video(params, irrel_param, grp_num, obj_nu
             draw_shape_cv2(img, obj['shape'], obj['pos'], obj['size'], obj['color'])
 
         cv2.imwrite(f"{out_dir}/frame_{t:03d}.png", img)
+        # Save ground-truth JSON for this frame
+        frame_info = [{
+            "position": [0.5, 0.5],
+            "shape": "circle",
+            "color": "red",
+            "size": radius_px / img_size * 2
+        }]
+        for obj in objs:
+            frame_info.append({
+                "position": obj['pos'].tolist(),
+                "shape": obj['shape'],
+                "color": obj['color'],
+                "size": obj['size'],
+            })
+        with open(f"{out_dir}/frame_{t:03d}.json", "w") as f:
+            json.dump(frame_info, f, indent=2)
 
 
 def generate_proximity_leader_trigger_task_batch(id, base_path, param, irrel_param, grp_num, obj_num_name):
