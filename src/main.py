@@ -20,7 +20,7 @@ def cleanup_old_videos(path):
 
 
 def main(args):
-    tasks = load_task_modules_from_patterns()
+    tasks = load_task_modules_from_patterns(args.lite)
 
     rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Gen', max_iterations=len(tasks))
     # Start the RTPT tracking

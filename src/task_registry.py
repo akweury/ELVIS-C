@@ -4,7 +4,7 @@ import importlib
 from pathlib import Path
 
 
-def load_task_modules_from_patterns():
+def load_task_modules_from_patterns(lite):
     """Dynamically load all pattern modules from the `patterns` folder."""
     task_modules = {}
     base_path = Path(__file__).parent / "patterns"
@@ -16,7 +16,7 @@ def load_task_modules_from_patterns():
             module_name = f"src.patterns.{principle_dir.name}.pattern"
             module = importlib.import_module(module_name)
             if hasattr(module, "register_tasks"):
-                tasks, names = module.register_tasks()
+                tasks, names = module.register_tasks(lite)
                 for task, name in zip(tasks, names):
                     id_str = f"{task_id:04d}"
                     task_modules[principle_dir.name][f"{id_str}_{name}"] = task
