@@ -4,7 +4,7 @@ from pathlib import Path
 import matplotlib
 
 # config.py
-img_size = 224
+img_size = 1024
 size_map = {'s': 0.12, 'm': 0.08, 'l': 0.05, 'xl': 0.04, 'xxl': 0.03, 'xxxl': 0.02}
 standard_quantity_dict = {"s": 5,
                           "m": 15,

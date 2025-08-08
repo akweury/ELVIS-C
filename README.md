@@ -43,6 +43,9 @@ python -m src.main --lite
 ```
 
 
+### Development Setup
+1. keep the configuration in the `src/config.py` file.
+2. install the required packages.
 ---
 ## File Structure
 All the generated patterns are stored in the `src/video_tasks`
