@@ -11,34 +11,39 @@ import argparse
 from src.utils.generators import combine_gifs
 
 
+def set_paths(args):
+    args.pattern_path  = Path(__file__).parent / "patterns"
+    args.task_path = config.root / "video_tasks"
+
 def cleanup_old_videos(path):
     # remove the existing video_tasks directory if it exists
-
     for item in path.iterdir():
         if item.is_dir():
             rmtree(item)
 
 
 def main(args):
-    tasks = load_task_modules_from_patterns(args.lite)
-
+    set_paths(args)
+    tasks = load_task_modules_from_patterns(args)
     rtpt = RTPT(name_initials='JS', experiment_name='ELVIS-C_Gen', max_iterations=len(tasks))
     # Start the RTPT tracking
     rtpt.start()
     print(config.root)
 
+    task_path = args.task_path
+
     for principle, principle_tasks in tasks.items():
-        cleanup_old_videos(config.root / "video_tasks" / principle)
+        cleanup_old_videos(task_path / principle)
         for name, task_fn in tqdm(principle_tasks.items()):
             # Update the RTPT (subtitle is optional)
             rtpt.step()
             print(f"Generating task: {name}")
-            train_path = config.root / "video_tasks" / principle / "train" / name
-            test_path = config.root / "video_tasks" / principle / "test" / name
+            train_path = task_path / principle / "train" / name
+            test_path = task_path / principle / "test" / name
             for e_i in range(config.get_example_num(args.lite)):
                 task_fn(e_i, train_path)
                 task_fn(e_i, test_path)
-            combine_gifs(train_path / "positive", config.root / "video_tasks" / principle / f"{name}.gif")
+            combine_gifs(train_path / "positive", task_path / principle / f"{name}.gif")
 
 
 if __name__ == "__main__":

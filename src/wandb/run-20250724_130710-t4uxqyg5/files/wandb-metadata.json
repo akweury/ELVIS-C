@@ -1,0 +1,54 @@
+{
+    "os": "macOS-10.16-x86_64-i386-64bit",
+    "python": "3.8.19",
+    "heartbeatAt": "2025-07-24T11:07:11.187342",
+    "startedAt": "2025-07-24T11:07:10.577385",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--principle",
+        "continuity",
+        "--model",
+        "vit",
+        "--img_num",
+        "60",
+        "--batch_size",
+        "4"
+    ],
+    "state": "running",
+    "program": "/Users/jing/PycharmProjects/ELVIS-C/src/eval_baselines.py",
+    "codePathLocal": "eval_baselines.py",
+    "codePath": "src/eval_baselines.py",
+    "git": {
+        "remote": "git@github.com:akweury/ELVIS-C.git",
+        "commit": "163e2d0c25ac8077b350248da9f0924a406c0570"
+    },
+    "email": "shajingyuan@me.com",
+    "root": "/Users/jing/PycharmProjects/ELVIS-C",
+    "host": "akweury-2.local",
+    "username": "jing",
+    "executable": "/Users/jing/opt/anaconda3/envs/nesy_causal_p/bin/python",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2400,
+        "min": 2400,
+        "max": 2400
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2400,
+            "min": 2400,
+            "max": 2400
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 460.4317207336426,
+            "used": 10.476020812988281
+        }
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

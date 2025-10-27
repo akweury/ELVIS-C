@@ -1,0 +1,56 @@
+wandb_version: 1
+
+batch_size:
+  desc: null
+  value: 4
+image_size:
+  desc: null
+  value: 224
+num_classes:
+  desc: null
+  value: 2
+epochs:
+  desc: null
+  value: 10
+_wandb:
+  desc: null
+  value:
+    python_version: 3.8.19
+    cli_version: 0.17.5
+    framework: huggingface
+    huggingface_version: 4.46.3
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1753355897
+    t:
+      1:
+      - 1
+      - 5
+      - 11
+      - 41
+      - 49
+      - 53
+      - 55
+      - 63
+      - 71
+      - 105
+      2:
+      - 1
+      - 5
+      - 11
+      - 41
+      - 49
+      - 53
+      - 55
+      - 63
+      - 71
+      - 105
+      3:
+      - 16
+      - 23
+      4: 3.8.19
+      5: 0.17.5
+      6: 4.46.3
+      8:
+      - 5
+      13: darwin-x86_64

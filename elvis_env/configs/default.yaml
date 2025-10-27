@@ -1,0 +1,23 @@
+seed: 42
+canvas:
+  width: 320
+  height: 240
+  bg_color: [255, 255, 255]
+video:
+  num_frames: 16
+objects:
+  num_min: 2
+  num_max: 4
+  shapes: ["circle", "square", "triangle"]
+  colors: [[220,20,60], [30,144,255], [60,179,113], [255,140,0]]
+  size_px: [18, 26]   # min, max radius/half-size (px)
+principles:
+  proximity: true
+  similarity: true
+interventions:
+  allowed_ops: ["move", "freeze", "change_color", "add", "remove", "set_pos"]
+render:
+  antialias: true
+  line_width: 2
+symbolics:
+  grid_norm: true   # normalize positions to [0,1]
