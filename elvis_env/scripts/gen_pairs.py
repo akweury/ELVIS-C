@@ -93,7 +93,8 @@ def main():
         export_gif=export_gif,
         gif_fps=args.gif_fps
     )
-
+    
+    
     manifests = []
     with ProcessPoolExecutor(max_workers=max(1, args.workers)) as ex:
         futures = [ex.submit(worker, i) for i in range(args.num_pairs)]
