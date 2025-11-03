@@ -346,6 +346,9 @@ def generate_spread_line_video(params, seed):
 # ------- worker function ---------------------------------------------------
 def _generate_video_worker(video_idx, params, output_root, split, export_gif=True, gif_fps=5):
     """Worker function to generate a single video"""
+    import csv
+    import math
+    
     seed = random.randint(0, 2_000_000_000)
     
     # Generate video
@@ -367,6 +370,201 @@ def _generate_video_worker(video_idx, params, output_root, split, export_gif=Tru
     meta_path = os.path.join(video_dir, "meta.json")
     with open(meta_path, 'w') as f:
         json.dump(meta_data, f, indent=2)
+    
+    # Save frame-level facts as CSV for causal modeling
+    csv_path = os.path.join(video_dir, "frame_facts.csv")
+    
+    with open(csv_path, 'w', newline='') as csvfile:
+        # Define CSV headers for causal modeling
+        fieldnames = [
+            'frame_idx',
+            'interpolation_t',
+            'num_visible_objects',
+            'intervention_applied',
+            'intervention_type',
+            # Global scene properties
+            'scene_width',
+            'scene_height',
+            'background_color_r',
+            'background_color_g',
+            'background_color_b',
+            'noise_level',
+            'shape_type',
+            'initial_formation',
+            # Per-object properties (for up to 12 objects max)
+        ]
+        
+        # Add object-specific columns (for max possible objects)
+        max_objects = 12
+        for obj_idx in range(max_objects):
+            fieldnames.extend([
+                f'obj_{obj_idx}_exists',
+                f'obj_{obj_idx}_x',
+                f'obj_{obj_idx}_y',
+                f'obj_{obj_idx}_size',
+                f'obj_{obj_idx}_color_r',
+                f'obj_{obj_idx}_color_g',
+                f'obj_{obj_idx}_color_b',
+                f'obj_{obj_idx}_distance_from_center',
+                f'obj_{obj_idx}_distance_from_target',
+                f'obj_{obj_idx}_velocity_x',
+                f'obj_{obj_idx}_velocity_y'
+            ])
+        
+        # Add aggregate statistics
+        fieldnames.extend([
+            'avg_distance_from_center',
+            'max_distance_from_center',
+            'min_distance_from_center',
+            'avg_object_spacing',
+            'formation_spread',
+            'movement_progress'
+        ])
+        
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        # Calculate center and target positions for reference
+        center_x = params.width // 2
+        center_y = params.height // 2
+        
+        # Calculate target positions (final horizontal line)
+        line_y = center_y
+        line_margin = params.width * 0.1
+        line_width = params.width - 2 * line_margin
+        
+        if params.num_objects == 1:
+            target_positions = [(center_x, line_y)]
+        else:
+            target_positions = [
+                (line_margin + i * (line_width / (params.num_objects - 1)), line_y)
+                for i in range(params.num_objects)
+            ]
+        
+        prev_frame_objects = None
+        
+        for frame_meta in meta_data['frames']:
+            row = {
+                # Frame-level info
+                'frame_idx': frame_meta['frame_idx'],
+                'interpolation_t': frame_meta['interpolation_t'],
+                'num_visible_objects': frame_meta['num_visible_objects'],
+                'intervention_applied': frame_meta['intervention_applied'],
+                'intervention_type': frame_meta['intervention_type'] or '',
+                
+                # Global scene properties
+                'scene_width': params.width,
+                'scene_height': params.height,
+                'background_color_r': params.background_color[0],
+                'background_color_g': params.background_color[1],
+                'background_color_b': params.background_color[2],
+                'noise_level': params.noise_level,
+                'shape_type': params.shape_type,
+                'initial_formation': params.initial_formation,
+            }
+            
+            # Initialize all object columns with default values
+            for obj_idx in range(max_objects):
+                row.update({
+                    f'obj_{obj_idx}_exists': False,
+                    f'obj_{obj_idx}_x': 0.0,
+                    f'obj_{obj_idx}_y': 0.0,
+                    f'obj_{obj_idx}_size': 0,
+                    f'obj_{obj_idx}_color_r': 0,
+                    f'obj_{obj_idx}_color_g': 0,
+                    f'obj_{obj_idx}_color_b': 0,
+                    f'obj_{obj_idx}_distance_from_center': 0.0,
+                    f'obj_{obj_idx}_distance_from_target': 0.0,
+                    f'obj_{obj_idx}_velocity_x': 0.0,
+                    f'obj_{obj_idx}_velocity_y': 0.0
+                })
+            
+            # Fill in actual object data
+            distances_from_center = []
+            object_positions = []
+            
+            for obj in frame_meta['objects']:
+                obj_id = obj['id']
+                if obj_id < max_objects:  # Safety check
+                    x, y = obj['position']
+                    
+                    # Calculate distances
+                    dist_from_center = math.sqrt((x - center_x)**2 + (y - center_y)**2)
+                    distances_from_center.append(dist_from_center)
+                    object_positions.append((x, y))
+                    
+                    # Distance to target position
+                    if obj_id < len(target_positions):
+                        target_x, target_y = target_positions[obj_id]
+                        dist_from_target = math.sqrt((x - target_x)**2 + (y - target_y)**2)
+                    else:
+                        dist_from_target = 0.0
+                    
+                    # Calculate velocity (change from previous frame)
+                    velocity_x, velocity_y = 0.0, 0.0
+                    if prev_frame_objects:
+                        for prev_obj in prev_frame_objects:
+                            if prev_obj['id'] == obj_id:
+                                prev_x, prev_y = prev_obj['position']
+                                velocity_x = x - prev_x
+                                velocity_y = y - prev_y
+                                break
+                    
+                    row.update({
+                        f'obj_{obj_id}_exists': True,
+                        f'obj_{obj_id}_x': x,
+                        f'obj_{obj_id}_y': y,
+                        f'obj_{obj_id}_size': obj['size'],
+                        f'obj_{obj_id}_color_r': obj['color'][0],
+                        f'obj_{obj_id}_color_g': obj['color'][1],
+                        f'obj_{obj_id}_color_b': obj['color'][2],
+                        f'obj_{obj_id}_distance_from_center': dist_from_center,
+                        f'obj_{obj_id}_distance_from_target': dist_from_target,
+                        f'obj_{obj_id}_velocity_x': velocity_x,
+                        f'obj_{obj_id}_velocity_y': velocity_y
+                    })
+            
+            # Calculate aggregate statistics
+            if distances_from_center:
+                row['avg_distance_from_center'] = sum(distances_from_center) / len(distances_from_center)
+                row['max_distance_from_center'] = max(distances_from_center)
+                row['min_distance_from_center'] = min(distances_from_center)
+            else:
+                row['avg_distance_from_center'] = 0.0
+                row['max_distance_from_center'] = 0.0
+                row['min_distance_from_center'] = 0.0
+            
+            # Calculate average spacing between objects
+            if len(object_positions) > 1:
+                spacings = []
+                for i in range(len(object_positions)):
+                    for j in range(i+1, len(object_positions)):
+                        x1, y1 = object_positions[i]
+                        x2, y2 = object_positions[j]
+                        spacing = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+                        spacings.append(spacing)
+                row['avg_object_spacing'] = sum(spacings) / len(spacings)
+            else:
+                row['avg_object_spacing'] = 0.0
+            
+            # Formation spread (max distance between any two objects)
+            if len(object_positions) > 1:
+                max_spread = 0.0
+                for i in range(len(object_positions)):
+                    for j in range(i+1, len(object_positions)):
+                        x1, y1 = object_positions[i]
+                        x2, y2 = object_positions[j]
+                        spread = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+                        max_spread = max(max_spread, spread)
+                row['formation_spread'] = max_spread
+            else:
+                row['formation_spread'] = 0.0
+            
+            # Movement progress (0 = start, 1 = end)
+            row['movement_progress'] = frame_meta['interpolation_t']
+            
+            writer.writerow(row)
+            prev_frame_objects = frame_meta['objects']
     
     # Save GIF if requested
     if export_gif:
@@ -479,7 +677,8 @@ def main():
     print(f"🧪 Test videos: {num_test} (5-12 objects, varied shapes/formations/colors)")
     print(f"🎬 Videos with interventions: {intervention_count}")
     print(f"🎨 Frame format: PNG {gif_status}")
-    print(f"📄 Dataset manifest: {manifest_path}")
+    print(f"� Causal data: CSV files with frame-level facts")
+    print(f"�📄 Dataset manifest: {manifest_path}")
 
 if __name__ == "__main__":
     main()

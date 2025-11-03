@@ -5,6 +5,7 @@ __pycache__/
 
 data 
 src/video_tasks/
+src/output/ 
 # C extensions
 *.so
 
