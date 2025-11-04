@@ -27,3 +27,4 @@ bitsandbytes
 ace_tools
 rtpt
 imageio[ffmpeg]
+seaborn

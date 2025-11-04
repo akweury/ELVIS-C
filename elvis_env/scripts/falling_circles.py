@@ -35,8 +35,7 @@ class VideoParams:
                  spawn_rate=0.3,       # probability of spawning per frame
                  circle_color=None,
                  background_color=None,
-                 noise_level=0.0,
-                 expected_jam_type="no_jam"):
+                 noise_level=0.0):
         self.num_frames = num_frames
         self.width = width
         self.height = height
@@ -52,7 +51,6 @@ class VideoParams:
         self.circle_color = circle_color or [200, 200, 255]  # light blue default
         self.background_color = background_color or [50, 50, 50]  # dark gray default
         self.noise_level = noise_level
-        self.expected_jam_type = expected_jam_type
     
     def to_dict(self):
         return {
@@ -70,69 +68,34 @@ class VideoParams:
             'spawn_rate': self.spawn_rate,
             'circle_color': self.circle_color,
             'background_color': self.background_color,
-            'noise_level': self.noise_level,
-            'expected_jam_type': self.expected_jam_type
+            'noise_level': self.noise_level
         }
 
 # ------- parameter sampling ------------------------------------------------
-def sample_video_params(num_frames=60, is_train=True, force_jam_type=None):
-    """Sample parameters to create specific jam scenarios"""
+def sample_video_params(num_frames=60, is_train=True):
+    """Sample random parameters for video generation - jam type determined after simulation"""
     
     width, height = 224, 224
     
-    # Determine jam type if not forced
-    if force_jam_type:
-        jam_type = force_jam_type
-    else:
-        jam_type = random.choice(["no_jam", "partial_jam", "full_jam"])
+    # All parameters are now randomly sampled without jam type bias
     
-    # Base parameters
-    num_circles = random.randint(4, 6)
-    gravity = random.uniform(1.4, 2)
-    spawn_rate = random.uniform(0.2, 0.5)
+    # Random number of circles
+    num_circles = random.randint(3, 8)
     
-    # Wind parameters
-    wind_types = ["none", "mild", "strong"]
-    wind_type = random.choice(wind_types)
+    # Random physics parameters
+    gravity = 1.0  # Constant gravity for physics consistency
+    spawn_rate = random.uniform(0.15, 0.6)
     
-    if wind_type == "none":
-        wind_strength = 0.0
-    elif wind_type == "mild":
-        wind_strength = random.uniform(0.01, 0.05)
-    else:  # strong
-        wind_strength = random.uniform(0.1, 0.15)
-    
+    # Random wind parameters
+    wind_strength = random.uniform(0, 0.2)
     wind_direction = random.choice([-1, 1])  # left or right
     
-    # Circle size parameters (will be adjusted by scenario)
-    if is_train:
-        base_circle_size_min = random.randint(2, 4)
-        base_circle_size_max = random.randint(6, 10)
-    else:
-        base_circle_size_min = random.randint(2, 6)
-        base_circle_size_max = random.randint(8, 15)
+    # Random circle size parameters (ensure minimum diameter of 10px = radius 5)
+    circle_size_min = random.randint(5, 10)   # Minimum radius 5 = 10px diameter
+    circle_size_max = random.randint(circle_size_min + 2, 15)  # Maximum radius 15 = 30px diameter
     
-    # Scenario-specific parameters (note: size is radius, so diameter = 2 * size)
-    # Ensure minimum diameter of 10px (radius 5)
-    if jam_type == "no_jam":
-        # Large hole, medium circles, good flow
-        hole_diameter = random.randint(25, 30)  # Large holes
-        circle_size_min = 10   # Radius 5 = diameter 10 (minimum)
-        circle_size_max = 12   # Radius 8 = diameter 16 (smaller than hole)
-        # num_circles = num_circles
-    elif jam_type == "partial_jam":
-        # Medium hole, moderate flow issues
-        hole_diameter = random.randint(25, 30)
-        circle_size_min = 12   # Radius 5 = diameter 10 (minimum)
-        circle_size_max = 15  # Radius 12 = diameter 24 (some fit, some don't)
-        # num_circles = random.randint(12, 20)
-        
-    else:  # full_jam
-        # Small hole, large circles, guaranteed jam
-        hole_diameter = random.randint(25, 30)
-        circle_size_min = 15   # Radius 8 = diameter 16
-        circle_size_max = 18  # Radius 15 = diameter 30 (too large for holes)
-        # num_circles = random.randint(15, 25)
+    # Random hole diameter (independent of circle sizes)
+    hole_diameter = random.randint(15, 30)
     
     # Hole position (mostly center, sometimes off-center)
     if random.random() < 0.8:
@@ -175,8 +138,7 @@ def sample_video_params(num_frames=60, is_train=True, force_jam_type=None):
         spawn_rate=spawn_rate,
         circle_color=circle_color,
         background_color=background_color,
-        noise_level=noise_level,
-        expected_jam_type=jam_type
+        noise_level=noise_level
     )
 
 # ------- physics simulation ------------------------------------------------
@@ -193,7 +155,7 @@ class Circle:
         self.exited = False
         self.stuck_counter = 0
 
-def generate_falling_circles_video(params, seed=None, include_labels=False):
+def generate_falling_circles_video(params, seed=None, include_labels=False, actual_jam_type=None):
     """
     Generate falling circles video with wind and hole dynamics
     Returns: frames (list of numpy arrays), meta_data (dict)
@@ -284,35 +246,28 @@ def generate_falling_circles_video(params, seed=None, include_labels=False):
                     font = ImageFont.load_default()
             except:
                 font = None
-            
             # Create label text
             labels = []
-            
-            # Jam type label
-            jam_label = f"Expected: {params.expected_jam_type.upper()}"
-            labels.append(jam_label)
-            
             # Wind information
             if params.wind_strength == 0:
                 wind_label = "Wind: None"
             else:
                 direction = "R→L" if params.wind_direction == -1 else "L→R"
-                if params.wind_strength < 0.3:
-                    strength = "Mild"
-                elif params.wind_strength < 0.6:
-                    strength = "Medium"
-                else:
-                    strength = "Strong"
-                wind_label = f"Wind: {strength} {direction}"
+                wind_label = f"Wind: {params.wind_strength:.1f} {direction}"
             labels.append(wind_label)
             
             # Hole and circle info
-            info_label = f"Hole: {params.hole_diameter}px | Circles: {params.circle_size_min}-{params.circle_size_max}px"
+            info_label = f"Hole: {params.hole_diameter}px | Circle Radius: {params.circle_size_min}-{params.circle_size_max}px"
             labels.append(info_label)
             
             # Current status
-            status_label = f"Frame: {frame_idx:02d} | Active: {len([c for c in circles if c.active])} | Exited: {exit_count}"
+            status_label = f"Frame: {frame_idx:02d} | Active: {len([c for c in circles if c.active])} | Total: {len(circles)} | Exited: {exit_count}"
             labels.append(status_label)
+            
+            # Jam type information (if available)
+            if actual_jam_type:
+                jam_label = f"Jam Type: {actual_jam_type.replace('_', ' ').title()}"
+                labels.append(jam_label)
             
             # Draw labels with background for better readability
             y_offset = 5
@@ -338,9 +293,9 @@ def generate_falling_circles_video(params, seed=None, include_labels=False):
                 
                 y_offset += text_height + 4
         
-        # Spawn new circles
+        # Spawn new circles (limited to total num_circles)
         spawn_timer += params.spawn_rate
-        while spawn_timer >= 1.0 and len([c for c in circles if c.active]) < params.num_circles:
+        while spawn_timer >= 1.0 and len(circles) < params.num_circles:
             spawn_x = random.uniform(params.circle_size_max, params.width - params.circle_size_max)
             spawn_y = random.uniform(-20, -5)
             size = random.randint(params.circle_size_min, params.circle_size_max)
@@ -543,7 +498,7 @@ def generate_falling_circles_video(params, seed=None, include_labels=False):
     exit_ratio = exit_count / max(total_spawned, 1)
     final_stuck = sum(1 for c in circles if c.stuck_counter > 5)
     
-    if exit_ratio > 0.7 and final_stuck < 3:
+    if exit_ratio > 0.99 and final_stuck < 1:
         actual_jam_type = "no_jam"
     elif exit_ratio > 0.3 and frames_since_last_exit < 30:
         actual_jam_type = "partial_jam"
@@ -596,7 +551,7 @@ def _generate_video_worker(video_idx, params, output_root, split, export_gif=Tru
             'frame_idx', 'num_active_circles', 'num_visible_circles',
             'circles_exited', 'circles_stuck', 'frames_since_last_exit',
             'hole_x', 'hole_y', 'hole_diameter', 'wind_effect',
-            'gravity', 'expected_jam_type', 'actual_jam_type',
+            'gravity', 'actual_jam_type',
             # Circle aggregates
             'avg_circle_y', 'min_circle_y', 'max_circle_y',
             'avg_velocity_y', 'total_kinetic_energy',
@@ -645,7 +600,6 @@ def _generate_video_worker(video_idx, params, output_root, split, export_gif=Tru
                 'hole_diameter': params.hole_diameter,
                 'wind_effect': frame_meta['wind_effect'],
                 'gravity': params.gravity,
-                'expected_jam_type': params.expected_jam_type,
                 'actual_jam_type': meta_data['actual_jam_type'],
                 'avg_circle_y': avg_y,
                 'min_circle_y': min_y,
@@ -659,8 +613,9 @@ def _generate_video_worker(video_idx, params, output_root, split, export_gif=Tru
     
     # Save GIF if requested (with labels, in separate folder)
     if export_gif:
-        # Generate frames WITH labels for GIF
-        gif_frames, _ = generate_falling_circles_video(params, seed, include_labels=True)
+        # Generate frames WITH labels for GIF, including the actual jam type
+        actual_jam_type = meta_data['actual_jam_type']
+        gif_frames, _ = generate_falling_circles_video(params, seed, include_labels=True, actual_jam_type=actual_jam_type)
         
         # Create separate gifs directory
         gifs_dir = os.path.join(output_root, "gifs", split)
@@ -685,7 +640,6 @@ def _generate_video_worker(video_idx, params, output_root, split, export_gif=Tru
         'num_frames': len(frames),
         'params': params.to_dict(),
         'seed': seed,
-        'expected_jam_type': params.expected_jam_type,
         'actual_jam_type': meta_data['actual_jam_type'],
         'exit_statistics': meta_data['exit_statistics']
     }
@@ -728,30 +682,15 @@ def main():
     num_train = int(args.num_videos * args.train_ratio)
     num_test = args.num_videos - num_train
     
-    # Generate video parameters
+    # Generate video parameters (all random now)
     tasks = []
     
-    if args.balanced_scenarios:
-        # Ensure balanced distribution of jam types
-        jam_types = ["no_jam", "partial_jam", "full_jam"]
+    for i in range(args.num_videos):
+        split = "train" if i < num_train else "test"
+        is_train = (split == "train")
+        params = sample_video_params(args.num_frames, is_train=is_train)
         
-        for i in range(args.num_videos):
-            split = "train" if i < num_train else "test"
-            is_train = (split == "train")
-            
-            # Cycle through jam types for balance
-            jam_type = jam_types[i % len(jam_types)]
-            params = sample_video_params(args.num_frames, is_train=is_train, force_jam_type=jam_type)
-            
-            tasks.append((i, params, split))
-    else:
-        # Random distribution
-        for i in range(args.num_videos):
-            split = "train" if i < num_train else "test"
-            is_train = (split == "train")
-            params = sample_video_params(args.num_frames, is_train=is_train)
-            
-            tasks.append((i, params, split))
+        tasks.append((i, params, split))
     
     # Generate videos in parallel
     results = []

@@ -3,7 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
-data 
+datasets/
+output/
+data/ 
 src/video_tasks/
 src/output/ 
 # C extensions
