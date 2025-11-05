@@ -121,12 +121,12 @@ class DatasetGenerator:
             'scenarios': {
                 'no_jam': {'target_ratio': 0.35, 'description': 'Free-flowing scenarios'},
                 'partial_jam': {'target_ratio': 0.40, 'description': 'Some congestion but eventual flow'},
-                'full_jam': {'target_ratio': 0.25, 'description': 'Complete blockage scenarios'}
+                'full_jam': {'target_ratio': 0.85, 'description': 'Complete blockage scenarios'}
             },
             'video_config': {
                 'width': 224,
                 'height': 224,
-                'num_frames': 40,
+                'num_frames': 60,
                 'fps': 10,
                 'include_labels': False
             }
@@ -135,20 +135,31 @@ class DatasetGenerator:
     def _load_progress(self) -> List[int]:
         """Load progress from previous run"""
         if self.progress_file.exists():
-            with open(self.progress_file, 'r') as f:
-                progress = json.load(f)
-                return progress.get('completed_videos', [])
+            try:
+                with open(self.progress_file, 'r') as f:
+                    content = f.read().strip()
+                    if not content:  # Empty file
+                        return []
+                    progress = json.loads(content)
+                    return progress.get('completed_videos', [])
+            except (json.JSONDecodeError, KeyError, IOError) as e:
+                print(f"⚠️  Warning: Could not load progress file: {e}")
+                return []
         return []
     
     def _save_progress(self):
         """Save current progress"""
-        progress = {
-            'completed_videos': self.completed_videos,
-            'total_completed': len(self.completed_videos),
-            'last_updated': datetime.now().isoformat()
-        }
-        with open(self.progress_file, 'w') as f:
-            json.dump(progress, f, indent=2)
+        try:
+            progress = {
+                'completed_videos': self.completed_videos,
+                'total_completed': len(self.completed_videos),
+                'last_updated': datetime.now().isoformat()
+            }
+            with open(self.progress_file, 'w') as f:
+                json.dump(progress, f, indent=2)
+        except (IOError, OSError) as e:
+            print(f"⚠️  Warning: Could not save progress: {e}")
+            # Continue without saving progress
     
     def sample_parameters(self) -> VideoParams:
         """
@@ -449,6 +460,49 @@ class DatasetGenerator:
         remaining_videos = [i for i in range(self.num_videos) if i not in self.completed_videos]
         random.shuffle(remaining_videos)  # Randomize order
         return remaining_videos
+    
+    @staticmethod
+    def sample_parameters_static():
+        """Static version of sample_parameters for worker processes"""
+        from falling_circles_env import VideoParams
+        
+        # Independent parameter sampling with consistent ranges
+        circle_size_min = random.randint(6, 12)
+        circle_size_max = random.randint(8, 15)
+        
+        # Ensure min <= max
+        if circle_size_min > circle_size_max:
+            circle_size_min, circle_size_max = circle_size_max, circle_size_min
+        
+        return VideoParams(
+            num_frames=60,  # Fixed optimized frame count
+            width=224,
+            height=224,
+            num_circles=random.randint(5, 20),  # Reduced range for 60 frames
+            circle_size_min=circle_size_min,
+            circle_size_max=circle_size_max,
+            hole_diameter=random.randint(15, 80),
+            hole_x_position=random.uniform(0.2, 0.8),
+            wind_strength=random.uniform(0.001, 0.02),
+            wind_direction=random.choice([-1, 1]),
+            gravity=random.uniform(1.0, 2.0),  # Increased for 60-frame completion
+            spawn_rate=random.uniform(0.2, 0.6),  # Reduced for 60 frames
+            circle_color=[random.randint(150, 255), random.randint(150, 255), random.randint(200, 255)],
+            background_color=[20, 20, 30],
+            noise_level=random.uniform(0, 0.1)
+        )
+    
+    @staticmethod
+    def _determine_jam_type_static(metadata):
+        """Static version of _determine_jam_type for worker processes"""
+        exit_ratio = metadata.get('exit_ratio', 0.0)
+        
+        if exit_ratio >= 0.9:
+            return 'no_jam'
+        elif exit_ratio >= 0.3:
+            return 'partial_jam'
+        else:
+            return 'full_jam'
     
     def _create_samples_index(self, results: List[Dict]):
         """Create samples.csv index file (matching falling_circles_v1 structure)"""
@@ -1253,16 +1307,222 @@ class DatasetGenerator:
 
 def worker_function(args):
     """Worker function for parallel video generation"""
-    video_id, output_dir, config = args
-    generator = DatasetGenerator(output_dir, 1, 1)  # Single worker instance
-    generator.config = config
-    return generator.generate_single_video(video_id)
+    try:
+        video_id, output_dir, config = args
+        
+        # Import dependencies
+        from falling_circles_env import FallingCirclesEnvironment, VideoParams
+        import cv2
+        import random
+        import json
+        import csv
+        from PIL import Image
+        from datetime import datetime
+        from pathlib import Path
+        import numpy as np
+        
+        # Setup paths
+        output_dir = Path(output_dir)
+        obs_dir_base = output_dir / 'observation'
+        viz_dir = output_dir / 'visualization'
+        
+        # Create directories
+        obs_dir_base.mkdir(parents=True, exist_ok=True)
+        viz_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Sample parameters independently
+        circle_size_min = random.randint(6, 12)
+        circle_size_max = random.randint(8, 15)
+        
+        # Ensure min <= max
+        if circle_size_min > circle_size_max:
+            circle_size_min, circle_size_max = circle_size_max, circle_size_min
+        
+        params = VideoParams(
+            num_frames=60,
+            width=224,
+            height=224,
+            num_circles=random.randint(5, 20),
+            circle_size_min=circle_size_min,
+            circle_size_max=circle_size_max,
+            hole_diameter=random.randint(15, 80),
+            hole_x_position=random.uniform(0.2, 0.8),
+            wind_strength=random.uniform(0.001, 0.02),
+            wind_direction=random.choice([-1, 1]),
+            gravity=random.uniform(1.0, 2.0),
+            spawn_rate=random.uniform(0.2, 0.6),
+            circle_color=[random.randint(150, 255), random.randint(150, 255), random.randint(200, 255)],
+            background_color=[20, 20, 30],
+            noise_level=random.uniform(0, 0.1)
+        )
+        
+        # Generate random seed
+        seed = random.randint(1, 2**31 - 1)
+        
+        # Create environment and generate video
+        env = FallingCirclesEnvironment(params)
+        frames, metadata = env.generate_video(seed=seed)
+        
+        if not frames:
+            return {
+                'video_id': video_id,
+                'status': 'failed',
+                'error': 'No frames generated',
+                'sample_id': None,
+                'jam_type': None,
+                'exit_ratio': None
+            }
+        
+        # Determine jam type first
+        exit_ratio = metadata.get('exit_statistics', {}).get('exit_ratio', 0.0)
+        if exit_ratio >= 0.9:
+            jam_type = 'no_jam'
+        elif exit_ratio >= 0.3:
+            jam_type = 'partial_jam'
+        else:
+            jam_type = 'full_jam'
+        
+        # Generate labeled frames for GIF visualization
+        labeled_frames, _ = env.generate_video(seed=seed, include_labels=True, actual_jam_type=jam_type)
+        
+        # Create sample ID
+        sample_id = f"obs_{video_id:06d}_{seed % 1000000:06d}"
+        
+        # Create observation directory
+        obs_dir = obs_dir_base / sample_id
+        obs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save frames
+        frames_dir = obs_dir / "frames"
+        frames_dir.mkdir(exist_ok=True)
+        
+        for i, frame in enumerate(frames):
+            frame_path = frames_dir / f"frame_{i:03d}.png"
+            img = Image.fromarray(frame)
+            img.save(frame_path)
+        
+        # Save metadata
+        enhanced_metadata = {
+            'sample_id': sample_id,
+            'sample_type': 'observation',
+            'params': {
+                'num_frames': config['video_config']['num_frames'],
+                'width': params.width,
+                'height': params.height,
+                'num_circles': params.num_circles,
+                'circle_size_min': params.circle_size_min,
+                'circle_size_max': params.circle_size_max,
+                'hole_diameter': params.hole_diameter,
+                'hole_x_position': params.hole_x_position,
+                'wind_strength': params.wind_strength,
+                'wind_direction': params.wind_direction,
+                'gravity': params.gravity,
+                'spawn_rate': params.spawn_rate,
+                'circle_color': list(params.circle_color),
+                'background_color': list(params.background_color),
+                'noise_level': params.noise_level
+            },
+            'generation_info': {
+                'timestamp': datetime.now().isoformat(),
+                'seed': seed,
+                'actual_jam_type': jam_type,
+                'generator_version': '1.0'
+            },
+            'video_stats': {
+                'num_frames': len(frames),
+                'frame_size': frames[0].shape if frames else None,
+                'duration_seconds': len(frames) / config['video_config']['fps']
+            },
+            'physics_simulation': metadata
+        }
+        
+        # Save metadata
+        meta_path = obs_dir / "meta.json"
+        with open(meta_path, 'w') as f:
+            json.dump(enhanced_metadata, f, indent=2)
+        
+        # Save frame CSV
+        csv_path = obs_dir / "stats.csv"
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'frame', 'active_circles', 'exited_circles', 'total_spawned',
+                'exit_ratio', 'avg_circle_y', 'avg_velocity', 'jam_detected'
+            ])
+            writer.writeheader()
+            
+            for i, frame_info in enumerate(metadata['frames']):
+                writer.writerow({
+                    'frame': i,
+                    'active_circles': frame_info.get('active_circles', 0),
+                    'exited_circles': frame_info.get('exited_circles', 0),
+                    'total_spawned': frame_info.get('total_spawned', 0),
+                    'exit_ratio': frame_info.get('exit_ratio', 0.0),
+                    'avg_circle_y': frame_info.get('avg_circle_y', 0.0),
+                    'avg_velocity': frame_info.get('avg_velocity', 0.0),
+                    'jam_detected': frame_info.get('jam_detected', False)
+                })
+        
+        # Generate GIF using labeled frames
+        if labeled_frames:
+            gif_path = viz_dir / f"{sample_id}.gif"
+            max_frames = 20
+            if len(labeled_frames) > max_frames:
+                indices = np.linspace(0, len(labeled_frames)-1, max_frames, dtype=int)
+                sampled_frames = [labeled_frames[i] for i in indices]
+            else:
+                sampled_frames = labeled_frames
+            
+            pil_frames = [Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)) for frame in sampled_frames]
+            pil_frames[0].save(
+                gif_path,
+                save_all=True,
+                append_images=pil_frames[1:],
+                duration=200,
+                loop=0
+            )
+        
+        return {
+            'video_id': video_id,
+            'sample_id': sample_id,
+            'status': 'success',
+            'jam_type': jam_type,
+            'exit_ratio': exit_ratio,
+            'seed': seed,
+            'params': {
+                'num_frames': params.num_frames,
+                'width': params.width,
+                'height': params.height,
+                'num_circles': params.num_circles,
+                'circle_size_min': params.circle_size_min,
+                'circle_size_max': params.circle_size_max,
+                'hole_diameter': params.hole_diameter,
+                'hole_x_position': params.hole_x_position,
+                'wind_strength': params.wind_strength,
+                'wind_direction': params.wind_direction,
+                'gravity': params.gravity,
+                'spawn_rate': params.spawn_rate,
+                'circle_color': params.circle_color,
+                'background_color': params.background_color,
+                'noise_level': params.noise_level
+            }
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            'video_id': video_id if 'video_id' in locals() else -1,
+            'status': 'error',
+            'error': f"{str(e)}\n{traceback.format_exc()}",
+            'sample_id': None,
+            'jam_type': None,
+            'exit_ratio': None
+        }
 
 
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description='Generate Falling Circles Dataset')
-    parser.add_argument('--num_videos', type=int, default=10,
+    parser.add_argument('--num_videos', type=int, default=100,
                        help='Number of videos to generate (default: 1000)')
     parser.add_argument('--output', type=str, default='data/falling_circles_dataset',
                        help='Output directory (default: data/falling_circles_dataset)')

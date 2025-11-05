@@ -322,18 +322,18 @@ class AIVideoInterface:
         """
         # Default values based on VideoParams class
         defaults = {
-            "num_frames": 60,
+            "num_frames": 40,
             "width": 224, 
             "height": 224,
-            "num_circles": 15,
+            "num_circles": 8,
             "circle_size_min": 4,
             "circle_size_max": 8,
             "hole_diameter": 20,
             "hole_x_position": 0.5,
             "wind_strength": 0.0,
             "wind_direction": 1,
-            "gravity": 0.8,
-            "spawn_rate": 0.3,
+            "gravity": 1.0,
+            "spawn_rate": 0.5,
             "circle_color": None,
             "background_color": None,
             "noise_level": 0.0
@@ -357,18 +357,18 @@ class AIVideoInterface:
         and their expected ranges/types.
         """
         return {
-            "num_frames": 60,          # Number of frames to generate
+            "num_frames": 40,          # Number of frames to generate
             "width": 224,              # Video width in pixels
             "height": 224,             # Video height in pixels
-            "num_circles": 15,         # Maximum number of circles
+            "num_circles":6,         # Maximum number of circles
             "circle_size_min": 4,      # Minimum circle radius
             "circle_size_max": 8,      # Maximum circle radius
             "hole_diameter": 20,       # Size of exit hole
             "hole_x_position": 0.5,    # Hole position (0.0=left, 1.0=right)
             "wind_strength": 0.0,      # Wind force (pixels per frame)
             "wind_direction": 1,       # Wind direction (1=right, -1=left)
-            "gravity": 0.8,            # Gravitational acceleration
-            "spawn_rate": 0.3,         # Probability of spawning per frame
+            "gravity": 1.0,            # Gravitational acceleration
+            "spawn_rate": 0.5,         # Probability of spawning per frame
             "noise_level": 0.0         # Visual noise level (0.0-0.2)
         }
     

@@ -210,6 +210,10 @@ class FallingCirclesEnvironment:
     
     def _spawn_circles(self):
         """Handle circle spawning logic"""
+        # Stop spawning new circles once any circle has exited
+        if self.exit_count > 0:
+            return
+            
         self.spawn_timer += self.params.spawn_rate
         
         while self.spawn_timer >= 1.0 and len(self.circles) < self.params.num_circles:

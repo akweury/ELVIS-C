@@ -23,14 +23,14 @@ def save_frames_as_gif(frames, output_path, duration=100):
 # (In practice, AI would extract these from analyzing a real video)
 ai_perceived_params = {
     "hole_diameter": 35,      # AI detected hole size
-    "wind_strength": 1.5,     # AI detected wind strength
+    "wind_strength": 0.2,     # AI detected wind strength
     "num_circles": 8,         # AI counted maximum circles
     "circle_size_min": 6,     # AI estimated circle sizes
     "circle_size_max": 10,
     "spawn_rate": 0.35,       # AI estimated spawn frequency
-    "width": 400,             # Video dimensions  
-    "height": 400,
-    "num_frames": 40          # Desired video length (updated to 40 frames)
+    "width": 224,             # Video dimensions  
+    "height": 224,
+    "num_frames": 60          # Desired video length (updated to 40 frames)
 }
 
 print("🎬 AI Model Intervention Test")
@@ -81,7 +81,7 @@ print(f"  Baseline: {len(baseline_video)} frames")
 print(f"  Intervention: {len(intervention_video)} frames")
 
 # Step 4: Save videos for human inspection/AI analysis
-output_dir = "ai_intervention_test"
+output_dir = "data/falling_circles_dataset/ai_intervention_test"
 os.makedirs(output_dir, exist_ok=True)
 
 baseline_path = os.path.join(output_dir, "baseline_video.gif")
