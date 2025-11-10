@@ -1,0 +1,91 @@
+# Two Parts Dataset Generation Configuration
+
+# Video generation settings
+video_config:
+  num_frames: 60
+  fps: 10
+  width: 224
+  height: 224
+
+# Parameter ranges for random sampling
+parameter_ranges:
+  # Number of objects on left side (moving down)
+  left_objects:
+    type: int
+    min: 2
+    max: 4
+    description: "Number of objects moving down on the left side"
+  
+  # Number of objects on right side (moving up)
+  right_objects:
+    type: int
+    min: 2
+    max: 4
+    description: "Number of objects moving up on the right side"
+  
+  # Object movement velocity
+  velocity:
+    type: float
+    min: 1.0
+    max: 4.0
+    description: "Movement speed of objects in pixels per frame"
+  
+  # Object size
+  object_radius:
+    type: int
+    min: 8
+    max: 20
+    description: "Radius of circular objects in pixels"
+
+# Dataset split configuration
+splits:
+  train: 0.7      # 70% for training
+  val: 0.15       # 15% for validation
+  test: 0.15      # 15% for testing
+
+# Quality control settings
+quality_control:
+  min_movement_threshold: 5.0    # Minimum total movement required
+  max_collision_rate: 0.8        # Maximum allowed collision frequency
+  min_objects_active: 0.5        # Minimum fraction of objects that should be active
+
+# Scenario classification thresholds
+scenario_thresholds:
+  sparse:
+    max_total_objects: 6
+    description: "Low object density scenarios"
+  medium:
+    min_total_objects: 7
+    max_total_objects: 10
+    description: "Medium object density scenarios"
+  dense:
+    min_total_objects: 11
+    description: "High object density scenarios"
+
+# Generation settings
+generation:
+  default_workers: 4              # Default number of parallel workers
+  progress_save_interval: 10      # Save progress every N videos
+  max_retries: 3                  # Maximum retries for failed videos
+  
+# Output settings
+output:
+  create_gifs: true               # Generate preview GIFs by default
+  gif_max_frames: 20              # Maximum frames in preview GIFs
+  gif_duration_ms: 200            # Duration per frame in milliseconds
+  frame_format: "png"             # Format for saved frames
+  include_labels_in_frames: false # Whether to include labels in frame PNGs
+  include_labels_in_gifs: true    # Whether to include labels in GIF previews
+
+# Metadata settings
+metadata:
+  generator_version: "1.0"
+  include_frame_stats: true       # Save frame-by-frame statistics
+  include_quality_analysis: true  # Include quality metrics
+  save_parameter_distributions: true  # Generate parameter analysis plots
+
+# Advanced settings
+advanced:
+  random_seed: null              # Fixed seed for reproducibility (null = random)
+  validate_outputs: true         # Validate generated videos
+  cleanup_failed: true           # Remove failed generation artifacts

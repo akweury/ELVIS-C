@@ -125,6 +125,24 @@ class FallingCirclesEnvironment:
         self.hole_x = int(self.params.hole_x_position * self.params.width)
         self.hole_y = self.params.height - 10
     
+    def step(self):
+        """Update physics for one simulation step"""
+        self._update_physics()
+    
+    def render(self, show_labels: bool = False, actual_jam_type: Optional[str] = None) -> np.ndarray:
+        """
+        Render current state and return frame as numpy array
+        
+        Args:
+            show_labels: Whether to include visual labels on frame
+            actual_jam_type: Override jam type label (for display only)
+            
+        Returns:
+            numpy array representing the rendered frame (RGB format)
+        """
+        frame_idx = len([c for c in self.circles if not c.active])  # Approximate frame number
+        return self._render_frame(frame_idx, show_labels, actual_jam_type)
+
     def generate_video(self, seed: Optional[int] = None, include_labels: bool = False, 
                       actual_jam_type: Optional[str] = None) -> Tuple[List[np.ndarray], Dict]:
         """
@@ -197,6 +215,127 @@ class FallingCirclesEnvironment:
         
         return frames, metadata
     
+    def save_video(self, filename: str, num_frames: Optional[int] = None, fps: int = 30, 
+                   seed: Optional[int] = None, include_labels: bool = False):
+        """
+        Save video to file
+        
+        Args:
+            filename: Output filename (should end with .mp4, .avi, etc.)
+            num_frames: Number of frames to generate (uses params.num_frames if None)
+            fps: Frames per second
+            seed: Random seed for reproducible results
+            include_labels: Whether to include visual labels
+        """
+        import cv2
+        import json
+        
+        # Use default num_frames if not specified
+        if num_frames is None:
+            num_frames = self.params.num_frames
+            
+        # Temporarily adjust num_frames in params
+        original_num_frames = self.params.num_frames
+        self.params.num_frames = num_frames
+        
+        try:
+            frames, metadata = self.generate_video(seed=seed, include_labels=include_labels)
+            
+            # Define codec and create VideoWriter
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(filename, fourcc, fps, (self.params.width, self.params.height))
+            
+            # Convert RGB to BGR for OpenCV and write frames
+            for frame in frames:
+                # Convert PIL image to numpy array if necessary
+                if hasattr(frame, 'mode'):  # PIL Image
+                    frame_array = np.array(frame)
+                else:  # Already numpy array
+                    frame_array = frame
+                    
+                # Convert RGB to BGR
+                frame_bgr = cv2.cvtColor(frame_array, cv2.COLOR_RGB2BGR)
+                out.write(frame_bgr)
+            
+            # Release everything
+            out.release()
+            print(f"Video saved to {filename}")
+            
+            # Also save metadata
+            metadata_filename = filename.rsplit('.', 1)[0] + '_metadata.json'
+            with open(metadata_filename, 'w') as f:
+                json.dump(metadata, f, indent=2)
+            print(f"Metadata saved to {metadata_filename}")
+            
+        finally:
+            # Restore original num_frames
+            self.params.num_frames = original_num_frames
+    
+    def run_interactive(self, fps: int = 30, include_labels: bool = False):
+        """
+        Run the environment interactively with OpenCV window
+        
+        Args:
+            fps: Frames per second for display
+            include_labels: Whether to show labels
+        """
+        import cv2
+        
+        print("Interactive mode - Press 'q' to quit, 'r' to reset, 's' to step")
+        
+        self.reset()
+        frame_count = 0
+        
+        while True:
+            # Render current frame
+            frame = self.render(show_labels=include_labels)
+            
+            # Convert PIL image to numpy array if necessary
+            if hasattr(frame, 'mode'):  # PIL Image
+                frame_array = np.array(frame)
+            else:  # Already numpy array
+                frame_array = frame
+                
+            # Convert RGB to BGR for OpenCV display
+            frame_bgr = cv2.cvtColor(frame_array, cv2.COLOR_RGB2BGR)
+            
+            # Add frame counter
+            cv2.putText(frame_bgr, f"Frame: {frame_count}", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            
+            # Display frame
+            cv2.imshow('Falling Circles Environment', frame_bgr)
+            
+            # Handle key presses
+            key = cv2.waitKey(1000 // fps) & 0xFF
+            if key == ord('q'):
+                break
+            elif key == ord('r'):
+                self.reset()
+                frame_count = 0
+                print("Environment reset")
+            elif key == ord('s'):
+                self.step()
+                frame_count += 1
+            else:
+                # Auto-advance
+                if frame_count < self.params.num_frames:
+                    self.step()
+                    frame_count += 1
+                else:
+                    print("Simulation complete. Press 'r' to reset or 'q' to quit.")
+        
+        cv2.destroyAllWindows()
+
+    def get_state(self) -> List[Tuple[float, float, int, bool]]:
+        """
+        Get current state of all circles
+        
+        Returns:
+            List of tuples containing (x, y, size, active) for each circle
+        """
+        return [(circle.x, circle.y, circle.size, circle.active) for circle in self.circles]
+
     def _update_physics(self):
         """Update physics for one simulation step"""
         # Spawn new circles
