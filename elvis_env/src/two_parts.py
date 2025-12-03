@@ -30,6 +30,9 @@ class TwoPartsEnv:
         self.object_radius = 15
         self.velocity = 2
         
+        # Entity-role mapping: consistent colors for each entity across videos
+        self.entity_colors = self._generate_entity_color_mapping()
+        
         self.reset()
     
     def _check_overlap(self, new_x: float, new_y: float, existing_objects: List[Dict]) -> bool:
@@ -51,6 +54,44 @@ class TwoPartsEnv:
             if distance < min_distance:
                 return True
         return False
+    
+    def _generate_entity_color_mapping(self) -> Dict[str, Tuple[int, int, int]]:
+        """
+        Generate consistent color mapping for entities across videos
+        
+        Returns:
+            Dictionary mapping entity IDs to BGR colors
+        """
+        # Predefined distinct colors for consistency (BGR format)
+        base_colors = [
+            (100, 150, 255),  # Light orange
+            (255, 150, 100),  # Light blue  
+            (150, 255, 100),  # Light green
+            (255, 100, 150),  # Light purple
+            (150, 100, 255),  # Light red
+            (100, 255, 150),  # Light cyan
+            (200, 200, 100),  # Light yellow
+            (150, 150, 255),  # Light pink
+            (100, 200, 200),  # Light teal
+            (200, 150, 150),  # Light brown
+        ]
+        
+        entity_colors = {}
+        color_idx = 0
+        
+        # Assign colors to left entities
+        for i in range(self.left_objects):
+            entity_id = f"left_{i+1}"
+            entity_colors[entity_id] = base_colors[color_idx % len(base_colors)]
+            color_idx += 1
+            
+        # Assign colors to right entities  
+        for i in range(self.right_objects):
+            entity_id = f"right_{i+1}"
+            entity_colors[entity_id] = base_colors[color_idx % len(base_colors)]
+            color_idx += 1
+            
+        return entity_colors
     
     def _generate_non_overlapping_position(self, side: str, existing_objects: List[Dict], 
                                           max_attempts: int = 100) -> Tuple[int, int]:
@@ -92,30 +133,38 @@ class TwoPartsEnv:
         """Reset the environment to initial state"""
         self.objects = []
         
-        # Create left side objects (moving down) with non-overlapping positions
-        for _ in range(self.left_objects):
+        # Create left side objects (moving down) with consistent entity IDs
+        for i in range(self.left_objects):
             x, y = self._generate_non_overlapping_position('left', self.objects)
-            # Generate random color in BGR format
-            color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+            entity_id = f"left_{i+1}"
+            role = f"left_object_{i+1}"
+            
             self.objects.append({
+                'entity_id': entity_id,
+                'role': role,
                 'x': x,
                 'y': y,
                 'side': 'left',
-                'color': color,
-                'velocity': self.velocity
+                'color': self.entity_colors[entity_id],
+                'velocity': self.velocity,
+                'creation_order': i
             })
         
-        # Create right side objects (moving up) with non-overlapping positions
-        for _ in range(self.right_objects):
+        # Create right side objects (moving up) with consistent entity IDs
+        for i in range(self.right_objects):
             x, y = self._generate_non_overlapping_position('right', self.objects)
-            # Generate random color in BGR format
-            color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+            entity_id = f"right_{i+1}"
+            role = f"right_object_{i+1}"
+            
             self.objects.append({
+                'entity_id': entity_id,
+                'role': role,
                 'x': x,
                 'y': y,
                 'side': 'right',
-                'color': color,
-                'velocity': self.velocity
+                'color': self.entity_colors[entity_id],
+                'velocity': self.velocity,
+                'creation_order': i
             })
     
     def step(self):
@@ -217,7 +266,7 @@ class TwoPartsEnv:
             frame = self.render(show_labels=include_labels)
             frames.append(frame)
             
-            # Collect frame metadata
+            # Collect frame metadata with entity and role information
             frame_info = {
                 'frame_idx': frame_idx,
                 'left_objects': len([obj for obj in self.objects if obj['side'] == 'left']),
@@ -225,16 +274,19 @@ class TwoPartsEnv:
                 'total_objects': len(self.objects),
                 'objects': [
                     {
+                        'entity_id': obj['entity_id'],
+                        'role': obj['role'],
                         'x': obj['x'],
                         'y': obj['y'],
                         'side': obj['side'],
-                        'color': obj['color']
+                        'color': obj['color'],
+                        'creation_order': obj['creation_order']
                     } for obj in self.objects
                 ]
             }
             frame_metadata.append(frame_info)
         
-        # Create overall metadata
+        # Create overall metadata with entity mapping
         metadata = {
             'num_frames': num_frames,
             'fps': fps,
@@ -243,6 +295,19 @@ class TwoPartsEnv:
             'right_objects': self.right_objects,
             'object_radius': self.object_radius,
             'velocity': self.velocity,
+            'entity_mapping': {
+                'colors': self.entity_colors,
+                'entities': {
+                    entity_id: {
+                        'role': f"{side}_object_{i+1}",
+                        'side': side,
+                        'creation_order': i
+                    }
+                    for side in ['left', 'right']
+                    for i in range(self.left_objects if side == 'left' else self.right_objects)
+                    for entity_id in [f"{side}_{i+1}"]
+                }
+            },
             'frames': frame_metadata
         }
         

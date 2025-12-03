@@ -353,7 +353,7 @@ class TwoPartsDatasetGenerator:
                 frame_path = frames_dir / f"{i:06d}.png"
                 cv2.imwrite(str(frame_path), frame)
             
-            # Create comprehensive metadata
+            # Create comprehensive metadata with entity mapping
             comprehensive_metadata = {
                 'sample_id': sample_id,
                 'sample_type': sample_type,
@@ -370,6 +370,12 @@ class TwoPartsDatasetGenerator:
                     'duration_seconds': len(frames) / video_config['fps']
                 },
                 'quality_analysis': quality_info,
+                'entity_info': {
+                    'entity_colors': metadata.get('entity_mapping', {}).get('colors', {}),
+                    'entity_definitions': metadata.get('entity_mapping', {}).get('entities', {}),
+                    'consistent_mapping': True,
+                    'mapping_version': '1.0'
+                },
                 'physics_simulation': metadata
             }
             
@@ -377,15 +383,25 @@ class TwoPartsDatasetGenerator:
             with open(sample_dir / 'meta.json', 'w') as f:
                 json.dump(comprehensive_metadata, f, indent=2)
             
-            # Save frame-by-frame statistics
+            # Save frame-by-frame statistics with entity information
             frame_stats = []
             for frame_data in metadata.get('frames', []):
-                frame_stats.append({
+                # Basic frame stats
+                frame_stat = {
                     'frame_idx': frame_data.get('frame_idx', 0),
                     'left_objects': frame_data.get('left_objects', 0),
                     'right_objects': frame_data.get('right_objects', 0),
                     'total_objects': frame_data.get('total_objects', 0)
-                })
+                }
+                
+                # Add entity-specific positions for tracking
+                objects = frame_data.get('objects', [])
+                for obj in objects:
+                    entity_id = obj.get('entity_id', 'unknown')
+                    frame_stat[f'{entity_id}_x'] = obj.get('x', 0)
+                    frame_stat[f'{entity_id}_y'] = obj.get('y', 0)
+                    
+                frame_stats.append(frame_stat)
             
             # Save stats as CSV
             if frame_stats:
