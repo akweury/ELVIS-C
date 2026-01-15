@@ -1,0 +1,81 @@
+# Configuration-driven video generation samples
+video:
+  width: 400
+  height: 300
+  num_frames: 60
+  fps: 30
+
+objects:
+  left_objects: 3
+  right_objects: 3
+  radius: 15
+  velocity: 2
+
+colors:
+  # Fix all left objects to red, all right objects to blue
+  fixed_colors:
+    left_1: [255, 0, 0]    # Red
+    left_2: [255, 0, 0]    # Red
+    left_3: [255, 0, 0]    # Red
+    right_1: [0, 0, 255]   # Blue
+    right_2: [0, 0, 255]   # Blue
+    right_3: [0, 0, 255]   # Blue
+  background: [0, 0, 0]    # Black background
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 2
+    right:
+      direction: up
+      velocity: 2
+
+interventions:
+  enabled: false
+
+# Multiple observation variants for the same base configuration
+observation_variants:
+  # Observation 1: Standard behavior (red left moving down, blue right moving up)
+  observation_1:
+    placement:
+      enabled: false  # No cross-placement
+  
+  # Observation 2: Mixed placement (some blue objects on right move up, some red on left move down)
+  observation_2:
+    placement:
+      enabled: true
+      cross_placements:
+        - source_type: left_2      # Second red object
+          target_side: right       # Place on right side
+          target_movement: up      # Move up like right objects
+        - source_type: right_2     # Second blue object  
+          target_side: left        # Place on left side
+          target_movement: down    # Move down like left objects
+    colors:
+      # Keep original colors but cross-placed
+      fixed_colors:
+        left_1: [255, 0, 0]    # Red stays on left
+        left_2: [255, 0, 0]    # Red moves to right (cross-placed)
+        left_3: [255, 0, 0]    # Red stays on left
+        right_1: [0, 0, 255]   # Blue stays on right
+        right_2: [0, 0, 255]   # Blue moves to left (cross-placed)
+        right_3: [0, 0, 255]   # Blue stays on right
+
+  # Observation 3: Heavy mixing (most objects cross-placed)
+  observation_3:
+    placement:
+      enabled: true
+      cross_placements:
+        - source_type: left_1
+          target_side: right
+          target_movement: up
+        - source_type: left_3
+          target_side: right  
+          target_movement: up
+        - source_type: right_1
+          target_side: left
+          target_movement: down
+        - source_type: right_3
+          target_side: left
+          target_movement: down

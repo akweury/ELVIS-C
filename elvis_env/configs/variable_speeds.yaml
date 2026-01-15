@@ -1,0 +1,63 @@
+# Variable speed objects - some fast, some slow
+video:
+  width: 400
+  height: 300
+  num_frames: 120
+  fps: 30
+
+objects:
+  left_objects: 6
+  right_objects: 6
+  radius: 15
+  velocity: 2  # Base velocity, overridden per object
+
+colors:
+  # Speed-coded colors: Red=fast, Blue=medium, Green=slow
+  fixed_colors:
+    left_1: [0, 0, 255]      # Red - Fast
+    left_2: [0, 255, 0]      # Green - Slow
+    left_3: [255, 0, 0]      # Blue - Medium
+    left_4: [0, 0, 255]      # Red - Fast
+    left_5: [0, 255, 0]      # Green - Slow
+    left_6: [255, 0, 0]      # Blue - Medium
+    
+    right_1: [255, 0, 0]     # Blue - Medium
+    right_2: [0, 0, 255]     # Red - Fast  
+    right_3: [0, 255, 0]     # Green - Slow
+    right_4: [255, 0, 0]     # Blue - Medium
+    right_5: [0, 0, 255]     # Red - Fast
+    right_6: [0, 255, 0]     # Green - Slow
+  background: [0, 0, 0]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 2  # Base, will be modified per object
+    right:
+      direction: up
+      velocity: 2  # Base, will be modified per object
+
+# Custom object-specific speeds (requires extended rule system)
+object_speeds:
+  left_1: 4    # Fast (red objects)
+  left_2: 1    # Slow (green objects) 
+  left_3: 2    # Medium (blue objects)
+  left_4: 4    # Fast
+  left_5: 1    # Slow
+  left_6: 2    # Medium
+  
+  right_1: 2   # Medium
+  right_2: 4   # Fast
+  right_3: 1   # Slow  
+  right_4: 2   # Medium
+  right_5: 4   # Fast
+  right_6: 1   # Slow
+
+interventions:
+  enabled: false
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: true

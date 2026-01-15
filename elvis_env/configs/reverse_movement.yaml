@@ -1,0 +1,39 @@
+# Reverse movement intervention configuration
+video:
+  width: 400
+  height: 300
+  num_frames: 60
+  fps: 30
+
+objects:
+  left_objects: 4
+  right_objects: 4
+  radius: 15
+  velocity: 2
+
+colors:
+  default_colors:
+    - [100, 150, 255]  # Light orange
+    - [255, 150, 100]  # Light blue
+    - [150, 255, 100]  # Light green
+    - [255, 100, 150]  # Light purple
+    - [150, 100, 255]  # Light red
+    - [100, 255, 150]  # Light cyan
+  background: [0, 0, 0]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 2
+    right:
+      direction: up
+      velocity: 2
+
+interventions:
+  enabled: true
+  type: reverse_movement
+  # Objects with indices 0 and 1 on left side, index 0 on right side will reverse
+  target_indices:
+    left: [0, 1]
+    right: [0]

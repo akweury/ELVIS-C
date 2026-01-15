@@ -1,0 +1,61 @@
+# Default configuration for two-parts video generation
+# This serves as the base template for all other configurations
+
+video:
+  width: 400
+  height: 300  
+  num_frames: 60
+  fps: 30
+
+objects:
+  left_objects: 5
+  right_objects: 5
+  radius: 15
+  velocity: 2
+
+colors:
+  # Default cycling colors (BGR format for OpenCV)
+  default_colors:
+    - [100, 150, 255]  # Light orange
+    - [255, 150, 100]  # Light blue
+    - [150, 255, 100]  # Light green
+    - [255, 100, 150]  # Light purple
+    - [150, 100, 255]  # Light red
+    - [100, 255, 150]  # Light cyan
+    - [200, 200, 100]  # Light yellow
+    - [150, 150, 255]  # Light pink
+    - [100, 200, 200]  # Light teal
+    - [200, 150, 150]  # Light brown
+  
+  # Fixed color assignments (leave empty for default cycling)
+  fixed_colors: {}
+  
+  # Background color
+  background: [0, 0, 0]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 2
+    right:
+      direction: up
+      velocity: 2
+
+interventions:
+  enabled: false
+  type: reverse_movement
+  target_indices:
+    left: []
+    right: []
+
+physics:
+  # Additional physics parameters
+  wrap_edges: true
+  collision_detection: false
+  gravity: 0
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: true

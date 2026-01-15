@@ -1,0 +1,38 @@
+# Small, quick videos for rapid testing
+video:
+  width: 200
+  height: 150
+  num_frames: 30
+  fps: 15
+
+objects:
+  left_objects: 3
+  right_objects: 3
+  radius: 8
+  velocity: 1
+
+colors:
+  default_colors:
+    - [100, 150, 255]
+    - [255, 150, 100]
+    - [150, 255, 100]
+    - [255, 100, 150]
+  fixed_colors: {}
+  background: [50, 50, 50]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 1
+    right:
+      direction: up
+      velocity: 1
+
+interventions:
+  enabled: false
+
+rendering:
+  show_labels: false  # Cleaner for small videos
+  antialias: true
+  dividing_line: false

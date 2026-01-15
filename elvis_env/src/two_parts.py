@@ -4,7 +4,8 @@ import numpy as np
 from typing import List, Tuple, Dict, Any, Optional
 
 class TwoPartsEnv:
-    def __init__(self, left_objects=5, right_objects=5, width=800, height=600):
+    def __init__(self, left_objects=5, right_objects=5, width=800, height=600, 
+                 intervention_params=None):
         """
         Environment with two parts: left side objects move down, right side objects move up
         
@@ -13,11 +14,18 @@ class TwoPartsEnv:
             right_objects: Number of objects on the right side
             width: Screen width
             height: Screen height
+            intervention_params: Optional dict with intervention settings for reversed movement
         """
         self.width = width
         self.height = height
         self.left_objects = left_objects
         self.right_objects = right_objects
+        
+        # Intervention parameters
+        self.intervention_params = intervention_params or {}
+        self.is_intervention = self.intervention_params.get('is_intervention', False)
+        self.left_intervention_indices = self.intervention_params.get('left_intervention_indices', [])
+        self.right_intervention_indices = self.intervention_params.get('right_intervention_indices', [])
         
         # Colors (BGR format for OpenCV)
         self.BLACK = (0, 0, 0)
@@ -168,28 +176,54 @@ class TwoPartsEnv:
             })
     
     def step(self):
-        """Update object positions"""
+        """Update object positions with intervention support"""
         for obj in self.objects:
+            # Determine if this object should have reversed movement
+            is_reversed = False
+            if self.is_intervention:
+                if obj['side'] == 'left' and obj['creation_order'] in self.left_intervention_indices:
+                    is_reversed = True
+                elif obj['side'] == 'right' and obj['creation_order'] in self.right_intervention_indices:
+                    is_reversed = True
+            
             if obj['side'] == 'left':
-                # Move down
-                obj['y'] += obj['velocity']
-                # Reset to top if out of bounds
-                if obj['y'] > self.height + self.object_radius:
-                    obj['y'] = -self.object_radius
-                    # Try to find a non-overlapping x position, but with fewer attempts for performance
-                    other_objects = [o for o in self.objects if o != obj]
-                    x, _ = self._generate_non_overlapping_position('left', other_objects, max_attempts=20)
-                    obj['x'] = x
+                if is_reversed:
+                    # Intervention: left objects move up
+                    obj['y'] -= obj['velocity']
+                    # Reset to bottom if out of bounds
+                    if obj['y'] < -self.object_radius:
+                        obj['y'] = self.height + self.object_radius
+                        other_objects = [o for o in self.objects if o != obj]
+                        x, _ = self._generate_non_overlapping_position('left', other_objects, max_attempts=20)
+                        obj['x'] = x
+                else:
+                    # Normal: left objects move down
+                    obj['y'] += obj['velocity']
+                    # Reset to top if out of bounds
+                    if obj['y'] > self.height + self.object_radius:
+                        obj['y'] = -self.object_radius
+                        other_objects = [o for o in self.objects if o != obj]
+                        x, _ = self._generate_non_overlapping_position('left', other_objects, max_attempts=20)
+                        obj['x'] = x
             else:  # right side
-                # Move up
-                obj['y'] -= obj['velocity']
-                # Reset to bottom if out of bounds
-                if obj['y'] < -self.object_radius:
-                    obj['y'] = self.height + self.object_radius
-                    # Try to find a non-overlapping x position, but with fewer attempts for performance
-                    other_objects = [o for o in self.objects if o != obj]
-                    x, _ = self._generate_non_overlapping_position('right', other_objects, max_attempts=20)
-                    obj['x'] = x
+                if is_reversed:
+                    # Intervention: right objects move down
+                    obj['y'] += obj['velocity']
+                    # Reset to top if out of bounds
+                    if obj['y'] > self.height + self.object_radius:
+                        obj['y'] = -self.object_radius
+                        other_objects = [o for o in self.objects if o != obj]
+                        x, _ = self._generate_non_overlapping_position('right', other_objects, max_attempts=20)
+                        obj['x'] = x
+                else:
+                    # Normal: right objects move up
+                    obj['y'] -= obj['velocity']
+                    # Reset to bottom if out of bounds
+                    if obj['y'] < -self.object_radius:
+                        obj['y'] = self.height + self.object_radius
+                        other_objects = [o for o in self.objects if o != obj]
+                        x, _ = self._generate_non_overlapping_position('right', other_objects, max_attempts=20)
+                        obj['x'] = x
     
     def render(self, show_labels=True) -> np.ndarray:
         """
@@ -211,6 +245,7 @@ class TwoPartsEnv:
         # Draw objects
         for obj in self.objects:
             center = (int(obj['x']), int(obj['y']))
+            # Draw all objects the same way, without special borders for interventions
             cv2.circle(frame, center, self.object_radius, obj['color'], -1)
         
         # Draw labels if requested
@@ -286,7 +321,7 @@ class TwoPartsEnv:
             }
             frame_metadata.append(frame_info)
         
-        # Create overall metadata with entity mapping
+        # Create overall metadata with entity mapping and intervention information
         metadata = {
             'num_frames': num_frames,
             'fps': fps,
@@ -295,13 +330,23 @@ class TwoPartsEnv:
             'right_objects': self.right_objects,
             'object_radius': self.object_radius,
             'velocity': self.velocity,
+            'is_intervention': self.is_intervention,
+            'intervention_info': {
+                'left_intervention_indices': self.left_intervention_indices,
+                'right_intervention_indices': self.right_intervention_indices,
+                'intervention_type': self.intervention_params.get('intervention_type', 'none')
+            },
             'entity_mapping': {
                 'colors': self.entity_colors,
                 'entities': {
                     entity_id: {
                         'role': f"{side}_object_{i+1}",
                         'side': side,
-                        'creation_order': i
+                        'creation_order': i,
+                        'has_intervention': (
+                            (side == 'left' and i in self.left_intervention_indices) or
+                            (side == 'right' and i in self.right_intervention_indices)
+                        ) if self.is_intervention else False
                     }
                     for side in ['left', 'right']
                     for i in range(self.left_objects if side == 'left' else self.right_objects)

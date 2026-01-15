@@ -1,0 +1,48 @@
+# Freeze intervention - some objects stop moving
+video:
+  width: 400
+  height: 300
+  num_frames: 60
+  fps: 30
+
+objects:
+  left_objects: 4
+  right_objects: 4
+  radius: 20
+  velocity: 3
+
+colors:
+  # Distinct colors to show frozen vs moving objects
+  fixed_colors:
+    left_1: [255, 0, 0]      # Red (will freeze)
+    left_2: [0, 255, 0]      # Green (moves)
+    left_3: [255, 0, 0]      # Red (will freeze)  
+    left_4: [0, 255, 0]      # Green (moves)
+    
+    right_1: [0, 0, 255]     # Blue (moves)
+    right_2: [255, 255, 0]   # Yellow (will freeze)
+    right_3: [0, 0, 255]     # Blue (moves)
+    right_4: [255, 255, 0]   # Yellow (will freeze)
+  background: [40, 40, 40]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 3
+    right:
+      direction: up
+      velocity: 3
+
+interventions:
+  enabled: true
+  type: freeze
+  # Freeze specific objects (red on left, yellow on right)
+  target_indices:
+    left: [0, 2]       # Freeze red objects
+    right: [1, 3]      # Freeze yellow objects
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: true

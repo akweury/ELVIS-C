@@ -9,6 +9,11 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
+            "args": [
+                "--num-videos", "5",
+                // "--config", "configs/rainbow_colors.yaml", 
+                "--generate-variants", "red_blue_colors",
+            ],
             "console": "integratedTerminal"
         }
     ]

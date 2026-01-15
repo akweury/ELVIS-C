@@ -1,0 +1,35 @@
+# Horizontal movement configuration
+video:
+  width: 500
+  height: 300
+  num_frames: 80
+  fps: 30
+
+objects:
+  left_objects: 3
+  right_objects: 3
+  radius: 20
+  velocity: 3
+
+colors:
+  # Green and orange objects
+  fixed_colors:
+    left_1: [0, 255, 0]    # Green
+    left_2: [0, 255, 0]    # Green
+    left_3: [0, 255, 0]    # Green
+    right_1: [0, 165, 255] # Orange
+    right_2: [0, 165, 255] # Orange
+    right_3: [0, 165, 255] # Orange
+  background: [40, 40, 40]
+
+movement:
+  patterns:
+    left:
+      direction: right  # Left objects move right
+      velocity: 3
+    right:
+      direction: left   # Right objects move left
+      velocity: 2
+
+interventions:
+  enabled: false

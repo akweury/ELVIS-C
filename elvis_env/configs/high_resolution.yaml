@@ -1,0 +1,46 @@
+# High-resolution videos with more objects
+video:
+  width: 800
+  height: 600
+  num_frames: 120
+  fps: 30
+
+objects:
+  left_objects: 8
+  right_objects: 8
+  radius: 12
+  velocity: 3
+
+colors:
+  default_colors:
+    - [100, 150, 255]
+    - [255, 150, 100] 
+    - [150, 255, 100]
+    - [255, 100, 150]
+    - [150, 100, 255]
+    - [100, 255, 150]
+    - [200, 200, 100]
+    - [150, 150, 255]
+    - [100, 200, 200]
+    - [200, 150, 150]
+    - [255, 200, 150]
+    - [150, 255, 200]
+  fixed_colors: {}
+  background: [20, 20, 20]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 3
+    right:
+      direction: up
+      velocity: 3
+
+interventions:
+  enabled: false
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: true

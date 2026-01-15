@@ -1,0 +1,50 @@
+# Rainbow-colored objects with varied speeds
+video:
+  width: 400
+  height: 300
+  num_frames: 80
+  fps: 30
+
+objects:
+  left_objects: 7
+  right_objects: 7
+  radius: 18
+  velocity: 2
+
+colors:
+  fixed_colors:
+    # Rainbow spectrum for left objects
+    left_1: [255, 0, 0]      # Red
+    left_2: [255, 127, 0]    # Orange  
+    left_3: [255, 255, 0]    # Yellow
+    left_4: [0, 255, 0]      # Green
+    left_5: [0, 0, 255]      # Blue
+    left_6: [75, 0, 130]     # Indigo
+    left_7: [148, 0, 211]    # Violet
+    
+    # Cool colors for right objects
+    right_1: [0, 255, 255]   # Cyan
+    right_2: [0, 191, 255]   # Deep Sky Blue
+    right_3: [30, 144, 255]  # Dodger Blue
+    right_4: [65, 105, 225]  # Royal Blue  
+    right_5: [138, 43, 226]  # Blue Violet
+    right_6: [147, 112, 219] # Medium Purple
+    right_7: [218, 112, 214] # Orchid
+  background: [25, 25, 25]
+
+movement:
+  patterns:
+    left:
+      direction: down
+      velocity: 3
+    right:
+      direction: up
+      velocity: 1.5
+
+interventions:
+  enabled: false
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: true

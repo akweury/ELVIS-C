@@ -1,0 +1,45 @@
+# Diagonal movement patterns  
+video:
+  width: 600
+  height: 400
+  num_frames: 90
+  fps: 30
+
+objects:
+  left_objects: 5
+  right_objects: 5
+  radius: 14
+  velocity: 2
+
+colors:
+  # Warm vs cool color scheme
+  fixed_colors:
+    left_1: [0, 69, 255]     # Orange Red
+    left_2: [0, 140, 255]    # Dark Orange
+    left_3: [0, 215, 255]    # Gold
+    left_4: [0, 255, 255]    # Yellow
+    left_5: [50, 255, 200]   # Yellow Green
+    
+    right_1: [255, 255, 0]   # Cyan
+    right_2: [255, 144, 30]  # Deep Sky Blue
+    right_3: [225, 105, 65]  # Royal Blue
+    right_4: [139, 69, 19]   # Saddle Brown
+    right_5: [128, 0, 128]   # Purple
+  background: [30, 30, 30]
+
+movement:
+  patterns:
+    left:
+      direction: down_right    # Custom diagonal movement
+      velocity: 2.5
+    right:
+      direction: up_left       # Custom diagonal movement
+      velocity: 2.5
+
+interventions:
+  enabled: false
+
+rendering:
+  show_labels: true
+  antialias: true
+  dividing_line: false  # No dividing line for diagonal movement
